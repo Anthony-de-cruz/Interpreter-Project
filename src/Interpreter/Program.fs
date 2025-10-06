@@ -6,7 +6,7 @@
 open System
 
 type terminal = 
-    Add | Sub | Mul | Div | Mod | Lpar | Rpar | Num of int
+    Add | Sub | Mul | Div | Mod | Pwr | Lpar | Rpar | Num of int
 
 let str2lst s = [for c in s -> c]
 let isblank c = System.Char.IsWhiteSpace c
@@ -25,6 +25,7 @@ let lexer input =
         match input with
         | [] -> []
         | '+'::tail -> Add :: scan tail
+        | '^'::tail -> Pwr :: scan tail
         | '-'::tail -> Sub :: scan tail
         | '*'::tail -> Mul :: scan tail
         | '/'::tail -> Div :: scan tail
@@ -71,12 +72,17 @@ let parser tList =
         | Add :: tail -> (T >> Eopt) tail
         | Sub :: tail -> (T >> Eopt) tail
         | _ -> tList
-    and T tList = (NR >> Topt) tList
+    and T tList = (P >> Topt) tList
     and Topt tList =
         match tList with
         | Mul :: tail -> (NR >> Topt) tail
         | Div :: tail -> (NR >> Topt) tail
         | Mod :: tail -> (NR >> Topt) tail
+        | _ -> tList
+    and P tList = (NR >> Popt) tList
+    and Popt tList =
+        match tList with
+        | Pwr :: tail -> (NR >> Popt) tail
         | _ -> tList
     and NR tList =
         match tList with 
