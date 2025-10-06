@@ -6,7 +6,7 @@
 open System
 
 type terminal = 
-    Add | Sub | Mul | Div | Lpar | Rpar | Num of int
+    Add | Sub | Mul | Div | Mod | Lpar | Rpar | Num of int
 
 let str2lst s = [for c in s -> c]
 let isblank c = System.Char.IsWhiteSpace c
@@ -28,6 +28,7 @@ let lexer input =
         | '-'::tail -> Sub :: scan tail
         | '*'::tail -> Mul :: scan tail
         | '/'::tail -> Div :: scan tail
+        | '%'::tail -> Mod :: scan tail
         | '('::tail -> Lpar:: scan tail
         | ')'::tail -> Rpar:: scan tail
         | c :: tail when isblank c -> scan tail
@@ -40,12 +41,20 @@ let getInputString() : string =
     Console.Write("Enter an expression: ")
     Console.ReadLine()
 
-// Grammar in BNF:
+// Grammar 0 in BNF:
 // <E>        ::= <T> <Eopt>
 // <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
 // <T>        ::= <NR> <Topt>
 // <Topt>     ::= "*" <NR> <Topt> | "/" <NR> <Topt> | <empty>
 // <NR>       ::= "Num" <value> | "(" <E> ")"
+
+// Grammar 1 in BNF: ( Current )
+// <E>        ::= <T> <Eopt>
+// <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+// <T>        ::= <NR> <Topt>
+// <Topt>     ::= "*" <NR> <Topt> | "/" <NR> <Topt> | "%" <NR> <Topt> | <empty>
+// <NR>       ::= "Num" <value> | "(" <E> ")"
+
 
 let parser tList = 
     let rec E tList = (T >> Eopt) tList         // >> is forward function composition operator: let inline (>>) f g x = g(f x)
@@ -59,6 +68,7 @@ let parser tList =
         match tList with
         | Mul :: tail -> (NR >> Topt) tail
         | Div :: tail -> (NR >> Topt) tail
+        | Mod :: tail -> (NR >> Topt) tail
         | _ -> tList
     and NR tList =
         match tList with 
@@ -85,6 +95,8 @@ let parseNeval tList =
                          Topt (tLst, value * tval)
         | Div :: tail -> let (tLst, tval) = NR tail
                          Topt (tLst, value / tval)
+        | Mod :: tail -> let (tLst, tval) = NR tail
+                         Topt (tLst, value % tval)
         | _ -> (tList, value)
     and NR tList =
         match tList with 
