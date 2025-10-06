@@ -41,12 +41,20 @@ let getInputString() : string =
     Console.Write("Enter an expression: ")
     Console.ReadLine()
 
-// Grammar in BNF:
+// Grammar 0 in BNF:
 // <E>        ::= <T> <Eopt>
 // <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
 // <T>        ::= <NR> <Topt>
 // <Topt>     ::= "*" <NR> <Topt> | "/" <NR> <Topt> | <empty>
 // <NR>       ::= "Num" <value> | "(" <E> ")"
+
+// Grammar 1 in BNF: ( Current )
+// <E>        ::= <T> <Eopt>
+// <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+// <T>        ::= <NR> <Topt>
+// <Topt>     ::= "*" <NR> <Topt> | "/" <NR> <Topt> | "%" <NR> <Topt> | <empty>
+// <NR>       ::= "Num" <value> | "(" <E> ")"
+
 
 let parser tList = 
     let rec E tList = (T >> Eopt) tList         // >> is forward function composition operator: let inline (>>) f g x = g(f x)
