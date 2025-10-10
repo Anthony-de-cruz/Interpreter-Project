@@ -102,7 +102,7 @@ let parseNeval tList =
         | Sub :: tail -> let (tLst, tval) = T tail
                          Eopt (tLst, value - tval)
         | _ -> (tList, value)
-    and T tList = (NR >> Topt) tList
+    and T tList = (P >> Topt) tList
     and Topt (tList, value) =
         match tList with
         | Mul :: tail -> let (tLst, tval) = NR tail
@@ -112,6 +112,12 @@ let parseNeval tList =
         | Mod :: tail -> let (tLst, tval) = NR tail
                          Topt (tLst, value % tval)
         | _ -> (tList, value)
+    and P tList = (NR >> Popt) tList
+    and Popt (tList, value) =
+        match tList with
+        | Pwr :: tail -> let(tLst, tval) = NR tail
+                         Popt (tLst, pown value tval) // When switching to floating point potentially add **
+        | _ -> (tList, value)           
     and NR tList =
         match tList with 
         | Num value :: tail -> (tail, value)
