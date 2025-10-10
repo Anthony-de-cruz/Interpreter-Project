@@ -5,8 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GUI"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Interpreter" Height="450" Width="800">
     <Grid>
-
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="91*"/>
+            <ColumnDefinition Width="709*"/>
+        </Grid.ColumnDefinitions>
+        <Button x:Name="calculateButton" Content="Calculate" HorizontalAlignment="Left" Margin="210,36,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.515,0.612" Width="66" Grid.Column="1" Click="exprButton_Click" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" IsEnabled="False"/>
+        <TextBox x:Name="exprTextBox" Text="" VerticalAlignment="Top" Height="20" Margin="10,36,0,0" HorizontalAlignment="Left" Width="286" Grid.ColumnSpan="2" TextChanged="exprTextBox_TextChanged"/>
+        <Label Content="Enter Your Expression" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
+        <TextBlock x:Name="outputTextBlock" HorizontalAlignment="Left" Margin="10,61,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Height="81" Width="780" Grid.ColumnSpan="2"/>
     </Grid>
 </Window>
