@@ -3,17 +3,44 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:GUI"
         mc:Ignorable="d"
         Title="Interpreter" Height="450" Width="800">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="91*"/>
-            <ColumnDefinition Width="709*"/>
-        </Grid.ColumnDefinitions>
-        <Button x:Name="calculateButton" Content="Calculate" HorizontalAlignment="Left" Margin="210,36,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.515,0.612" Width="66" Grid.Column="1" Click="exprButton_Click" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" IsEnabled="False"/>
-        <TextBox x:Name="exprTextBox" Text="" VerticalAlignment="Top" Height="20" Margin="10,36,0,0" HorizontalAlignment="Left" Width="286" Grid.ColumnSpan="2" TextChanged="exprTextBox_TextChanged"/>
-        <Label Content="Enter Your Expression" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
-        <TextBlock x:Name="outputTextBlock" HorizontalAlignment="Left" Margin="10,61,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Height="81" Width="780" Grid.ColumnSpan="2"/>
-    </Grid>
+    <DockPanel>
+        <!-- Top Menu -->
+        <Menu DockPanel.Dock="Top" Background="White">
+            <MenuItem Header="_Help">
+                <MenuItem x:Name="HelpTutorialButton" Header="Tutorial" Click="HelpTutorialButton_Click" />
+            </MenuItem>
+        </Menu>
+        <Grid Margin="0,0,0,10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <!-- Input Group -->
+            <GroupBox Header="Enter Your Expression" Grid.Row="0" Margin="10,10,10,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="ExprTextBox" Grid.Column="0" Text="" Height="24"
+                             Margin="10,0,5,0" TextChanged="ExprTextBox_TextChanged"
+                             HorizontalScrollBarVisibility="Auto" />
+                    <Button x:Name="CalculateButton" Grid.Column="1" Content="Calculate" HorizontalAlignment="Center"
+                            Margin="5,10,10,10"
+                            VerticalAlignment="Top" RenderTransformOrigin="0.463,0.13" Width="63"
+                            Click="ExprButton_Click" HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center" IsEnabled="False" Height="24" />
+                </Grid>
+            </GroupBox>
+            <!-- Output Group -->
+            <GroupBox Header="Output" Grid.Row="1" Margin="10,0,10,0">
+                <TextBox x:Name="OutputTextBox" Margin="10,10,10,10" Text=""
+                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto" Panel.ZIndex="5" IsReadOnly="True"
+                         HorizontalScrollBarVisibility="Auto" />
+            </GroupBox>
+        </Grid>
+    </DockPanel>
 </Window>
