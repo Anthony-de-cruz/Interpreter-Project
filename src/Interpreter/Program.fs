@@ -67,6 +67,24 @@ let getInputString() : string =
 // <Popt>     ::= "^" <NR> <Popt> | <empty>
 // <NR>       ::= "Num" <value> | "(" <E> ")"
 
+// Updated Grammar 3 in BNF:
+// <E>        ::= <T> <Eopt>
+// <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+// <T>        ::= <U> <Topt>
+// <Topt>     ::= "*" <U> <Topt> | "/" <U> <Topt> | "%" <U> <Topt> | <empty>
+// <U>        ::= "-" <U> | "!" <U> | <P>
+// <P>        ::= <NR> <Popt>
+// <Popt>     ::= "^" <NR> <Popt> | <empty>
+// <NR>       ::= "Num" <value> | "(" <E> ")"
+
+// E    -> Expression
+// Eopt -> Expression/Optional
+// T    -> Term
+// Topt -> Term/Optional
+// U    -> Unary
+// P    -> Power
+// Popt -> Power/Optional
+// NR   -> Number -- Terminal
 let parser tList = 
     let rec E tList = (T >> Eopt) tList         // >> is forward function composition operator: let inline (>>) f g x = g(f x)
     and Eopt tList = 
