@@ -99,6 +99,9 @@ let parser tList =
         | Div :: tail -> (NR >> Topt) tail
         | Mod :: tail -> (NR >> Topt) tail
         | _ -> tList
+    and U tList =
+        match tList with
+        | Sub :: tail -> U tail
     and P tList = (NR >> Popt) tList
     and Popt tList =
         match tList with
