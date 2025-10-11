@@ -44,21 +44,21 @@ let getInputString() : string =
     Console.Write("Enter an expression: ")
     Console.ReadLine()
 
-// Grammar 0 in BNF:
+// Grammar 0 in BNF: ( Original )
 // <E>        ::= <T> <Eopt>
 // <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
 // <T>        ::= <NR> <Topt>
 // <Topt>     ::= "*" <NR> <Topt> | "/" <NR> <Topt> | <empty>
 // <NR>       ::= "Num" <value> | "(" <E> ")"
 
-// Grammar 1 in BNF: 
+// Grammar 1 in BNF:
 // <E>        ::= <T> <Eopt>
 // <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
 // <T>        ::= <NR> <Topt>
 // <Topt>     ::= "*" <NR> <Topt> | "/" <NR> <Topt> | "%" <NR> <Topt> | <empty>
 // <NR>       ::= "Num" <value> | "(" <E> ")"
 
-// Grammar 2 in BNF: ( Current )
+// Grammar 2 in BNF:
 // <E>        ::= <T> <Eopt>
 // <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
 // <T>        ::= <P> <Topt>
@@ -67,6 +67,24 @@ let getInputString() : string =
 // <Popt>     ::= "^" <NR> <Popt> | <empty>
 // <NR>       ::= "Num" <value> | "(" <E> ")"
 
+// Updated Grammar 3 in BNF: ( Current )
+// <E>        ::= <T> <Eopt>
+// <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+// <T>        ::= <U> <Topt>
+// <Topt>     ::= "*" <U> <Topt> | "/" <U> <Topt> | "%" <U> <Topt> | <empty>
+// <U>        ::= "-" <U> | <P>
+// <P>        ::= <NR> <Popt>
+// <Popt>     ::= "^" <NR> <Popt> | <empty>
+// <NR>       ::= "Num" <value> | "(" <E> ")"
+
+// E    -> Expression
+// Eopt -> Expression/Optional
+// T    -> Term
+// Topt -> Term/Optional
+// U    -> Unary
+// P    -> Power
+// Popt -> Power/Optional
+// NR   -> Number -- Terminal
 let parser tList = 
     let rec E tList = (T >> Eopt) tList         // >> is forward function composition operator: let inline (>>) f g x = g(f x)
     and Eopt tList = 
@@ -74,13 +92,19 @@ let parser tList =
         | Add :: tail -> (T >> Eopt) tail
         | Sub :: tail -> (T >> Eopt) tail
         | _ -> tList
-    and T tList = (P >> Topt) tList
+    and T tList = (U >> Topt) tList
     and Topt tList =
         match tList with
-        | Mul :: tail -> (NR >> Topt) tail
-        | Div :: tail -> (NR >> Topt) tail
-        | Mod :: tail -> (NR >> Topt) tail
+        | Mul :: tail -> (U >> Topt) tail
+        | Div :: tail -> (U >> Topt) tail
+        | Mod :: tail -> (U >> Topt) tail
         | _ -> tList
+    and U tList =
+        match tList with
+        | Sub :: tail ->
+            let tail' = U tail
+            tail'
+        | _ -> P tList
     and P tList = (NR >> Popt) tList
     and Popt tList =
         match tList with
@@ -104,16 +128,22 @@ let parseNeval tList =
         | Sub :: tail -> let (tLst, tval) = T tail
                          Eopt (tLst, value - tval)
         | _ -> (tList, value)
-    and T tList = (P >> Topt) tList
+    and T tList = (U >> Topt) tList
     and Topt (tList, value) =
         match tList with
-        | Mul :: tail -> let (tLst, tval) = NR tail
+        | Mul :: tail -> let (tLst, tval) = U tail
                          Topt (tLst, value * tval)
-        | Div :: tail -> let (tLst, tval) = NR tail
+        | Div :: tail -> let (tLst, tval) = U tail
                          Topt (tLst, value / tval)
-        | Mod :: tail -> let (tLst, tval) = NR tail
+        | Mod :: tail -> let (tLst, tval) = U tail
                          Topt (tLst, value % tval)
         | _ -> (tList, value)
+    and U tList =
+        match tList with
+        | Sub :: tail ->
+            let (tLst, tval) = U tail
+            (tLst, -tval)
+        | _ -> P tList
     and P tList = (NR >> Popt) tList
     and Popt (tList, value) =
         match tList with
