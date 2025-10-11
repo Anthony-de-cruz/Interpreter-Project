@@ -1,0 +1,45 @@
+﻿<Window x:Class="GUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Interpreter" Height="450" Width="800">
+    <DockPanel>
+        <!-- Top Menu -->
+        <Menu DockPanel.Dock="Top" Background="White">
+            <MenuItem Header="_Help">
+                <MenuItem x:Name="HelpTutorialButton" Header="Tutorial" Click="HelpTutorialButton_Click" />
+            </MenuItem>
+        </Menu>
+        <Grid Margin="0,0,0,10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <!-- Input Group -->
+            <GroupBox Header="Enter Your Expression" Grid.Row="0" Margin="10,10,10,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="ExprTextBox" Grid.Column="0" Text="" Height="24"
+                             Margin="10,0,5,0" TextChanged="ExprTextBox_TextChanged" />
+                    <Button x:Name="CalculateButton" Grid.Column="1" Content="Calculate" HorizontalAlignment="Center"
+                            Margin="5,10,10,10"
+                            VerticalAlignment="Top" RenderTransformOrigin="0.463,0.13" Width="63"
+                            Click="ExprButton_Click" HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center" IsEnabled="False" Height="24" />
+                </Grid>
+            </GroupBox>
+            <!-- Output Group -->
+            <GroupBox Header="Output" Grid.Row="1" Margin="10,0,10,0">
+                <TextBox x:Name="OutputTextBox" Margin="10,10,10,10" Text=""
+                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto" Panel.ZIndex="5" IsReadOnly="True"
+                         HorizontalScrollBarVisibility="Auto" />
+            </GroupBox>
+        </Grid>
+    </DockPanel>
+</Window>
