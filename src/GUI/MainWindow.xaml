@@ -25,8 +25,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBox x:Name="ExprTextBox" Grid.Column="0" Text="" Height="24"
-                             Margin="10,0,5,0" TextChanged="ExprTextBox_TextChanged"
-                             HorizontalScrollBarVisibility="Auto" />
+                             Margin="10,0,5,0" TextChanged="ExprTextBox_TextChanged" />
                     <Button x:Name="CalculateButton" Grid.Column="1" Content="Calculate" HorizontalAlignment="Center"
                             Margin="5,10,10,10"
                             VerticalAlignment="Top" RenderTransformOrigin="0.463,0.13" Width="63"
