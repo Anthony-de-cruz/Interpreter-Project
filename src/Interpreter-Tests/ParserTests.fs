@@ -72,4 +72,42 @@ let ``Basic Integer Division Valid`` () =
         Interpreter.parseNeval o
     |> snd = 2
     |> Assert.True
+    
+[<Fact>]
+let ``Basic Power implementation valid`` () =
+    Interpreter.lexer "5 ^ 2"
+    |> fun o ->
+        Interpreter.parser o |> ignore
+        Interpreter.parseNeval o
+    |> snd = 25
+    |> Assert.True
+    
+    Interpreter.lexer "5 ^ 2 ^ 2"
+    |> fun o ->
+        Interpreter.parser o |> ignore
+        Interpreter.parseNeval o
+    |> snd = 625
+    |> Assert.True
+    
+[<Fact>]
+let ``Basic Power implementation Invalid`` () =
+    fun () ->
+        Interpreter.lexer "^"
+        |> Interpreter.parser
+        |> ignore
+    |> Assert.Throws<System.Exception>
+    |> ignore
 
+    fun () ->
+        Interpreter.lexer "5 ^"
+        |> Interpreter.parser
+        |> ignore
+    |> Assert.Throws<System.Exception>
+    |> ignore
+
+    fun () ->
+        Interpreter.lexer "5 ^ 3 ^"
+        |> Interpreter.parser
+        |> ignore
+    |> Assert.Throws<System.Exception>
+    |> ignore
