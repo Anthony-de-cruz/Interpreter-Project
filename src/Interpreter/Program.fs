@@ -8,7 +8,7 @@ module Interpreter
 open System
 
 type terminal = 
-    Add | Sub | Mul | Div | Mod | Lpar | Rpar | Num of int
+    Add | Sub | Mul | Div | Mod | Pwr | Lpar | Rpar | Num of int
 
 let str2lst s = [for c in s -> c]
 let isblank c = System.Char.IsWhiteSpace c
@@ -27,6 +27,7 @@ let lexer input =
         match input with
         | [] -> []
         | '+'::tail -> Add :: scan tail
+        | '^'::tail -> Pwr :: scan tail
         | '-'::tail -> Sub :: scan tail
         | '*'::tail -> Mul :: scan tail
         | '/'::tail -> Div :: scan tail
@@ -50,13 +51,21 @@ let getInputString() : string =
 // <Topt>     ::= "*" <NR> <Topt> | "/" <NR> <Topt> | <empty>
 // <NR>       ::= "Num" <value> | "(" <E> ")"
 
-// Grammar 1 in BNF: ( Current )
+// Grammar 1 in BNF: 
 // <E>        ::= <T> <Eopt>
 // <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
 // <T>        ::= <NR> <Topt>
 // <Topt>     ::= "*" <NR> <Topt> | "/" <NR> <Topt> | "%" <NR> <Topt> | <empty>
 // <NR>       ::= "Num" <value> | "(" <E> ")"
 
+// Grammar 2 in BNF: ( Current )
+// <E>        ::= <T> <Eopt>
+// <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+// <T>        ::= <P> <Topt>
+// <Topt>     ::= "*" <NR> <Topt> | "/" <NR> <Topt> | "%" <NR> <Topt> | <empty>
+// <P>        ::= <NR> <Popt>                 
+// <Popt>     ::= "^" <NR> <Popt> | <empty>
+// <NR>       ::= "Num" <value> | "(" <E> ")"
 
 let parser tList = 
     let rec E tList = (T >> Eopt) tList         // >> is forward function composition operator: let inline (>>) f g x = g(f x)
@@ -65,12 +74,17 @@ let parser tList =
         | Add :: tail -> (T >> Eopt) tail
         | Sub :: tail -> (T >> Eopt) tail
         | _ -> tList
-    and T tList = (NR >> Topt) tList
+    and T tList = (P >> Topt) tList
     and Topt tList =
         match tList with
         | Mul :: tail -> (NR >> Topt) tail
         | Div :: tail -> (NR >> Topt) tail
         | Mod :: tail -> (NR >> Topt) tail
+        | _ -> tList
+    and P tList = (NR >> Popt) tList
+    and Popt tList =
+        match tList with
+        | Pwr :: tail -> (NR >> Popt) tail
         | _ -> tList
     and NR tList =
         match tList with 
@@ -90,7 +104,7 @@ let parseNeval tList =
         | Sub :: tail -> let (tLst, tval) = T tail
                          Eopt (tLst, value - tval)
         | _ -> (tList, value)
-    and T tList = (NR >> Topt) tList
+    and T tList = (P >> Topt) tList
     and Topt (tList, value) =
         match tList with
         | Mul :: tail -> let (tLst, tval) = NR tail
@@ -100,6 +114,12 @@ let parseNeval tList =
         | Mod :: tail -> let (tLst, tval) = NR tail
                          Topt (tLst, value % tval)
         | _ -> (tList, value)
+    and P tList = (NR >> Popt) tList
+    and Popt (tList, value) =
+        match tList with
+        | Pwr :: tail -> let(tLst, tval) = NR tail
+                         Popt (tLst, pown value tval) // When switching to floating point potentially add **
+        | _ -> (tList, value)           
     and NR tList =
         match tList with 
         | Num value :: tail -> (tail, value)
