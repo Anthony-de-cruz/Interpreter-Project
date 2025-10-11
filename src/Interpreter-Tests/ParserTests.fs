@@ -72,6 +72,39 @@ let ``Basic Integer Division Valid`` () =
         Interpreter.parseNeval o
     |> snd = 2
     |> Assert.True
+
+[<Fact>]
+let ``Basic Integer Division Invalid`` () =
+    fun () ->
+        Interpreter.lexer "/"
+        |> Interpreter.parser
+        |> ignore
+    |> Assert.Throws<System.Exception>
+    |> ignore
+    
+    fun () ->
+        Interpreter.lexer "3 /"
+        |> Interpreter.parser
+        |> ignore
+    |> Assert.Throws<System.Exception>
+    |> ignore
+    
+    fun () ->
+        Interpreter.lexer "/ 3"
+        |> Interpreter.parser
+        |> ignore
+    |> Assert.Throws<System.Exception>
+    |> ignore
+    
+    fun () ->
+        Interpreter.lexer "3 / 0"
+        |> fun o ->
+            Interpreter.parser o
+            |> ignore
+            Interpreter.parseNeval o 
+            |> ignore
+    |> Assert.Throws<System.DivideByZeroException>
+    |> ignore
     
 [<Fact>]
 let ``Basic Power implementation valid`` () =
@@ -107,6 +140,52 @@ let ``Basic Power implementation Invalid`` () =
 
     fun () ->
         Interpreter.lexer "5 ^ 3 ^"
+        |> Interpreter.parser
+        |> ignore
+    |> Assert.Throws<System.Exception>
+    |> ignore
+    
+[<Fact>]
+let ``Basic Unary Operator Valid`` () =
+    Interpreter.lexer "-2"
+    |> fun o ->
+        Interpreter.parser o |> ignore
+        Interpreter.parseNeval o
+    |> snd = -2
+    |> Assert.True
+    
+    Interpreter.lexer "5 -- 2"
+    |> fun o ->
+        Interpreter.parser o |> ignore
+        Interpreter.parseNeval o
+    |> snd = 7
+    |> Assert.True
+    
+    Interpreter.lexer "5 +- 2"
+    |> fun o ->
+        Interpreter.parser o |> ignore
+        Interpreter.parseNeval o
+    |> snd = 3
+    |> Assert.True
+    
+    Interpreter.lexer "5 +-- 3"
+    |> fun o ->
+        Interpreter.parser o |> ignore
+        Interpreter.parseNeval o
+    |> snd = 8
+    |> Assert.True
+    
+[<Fact>]
+let ``Basic Unary Operator Invalid`` () =
+    fun () ->
+        Interpreter.lexer "-"
+        |> Interpreter.parser
+        |> ignore
+    |> Assert.Throws<System.Exception>
+    |> ignore
+    
+    fun () ->
+        Interpreter.lexer "5 ++- 3"
         |> Interpreter.parser
         |> ignore
     |> Assert.Throws<System.Exception>
