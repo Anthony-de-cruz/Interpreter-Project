@@ -3,13 +3,17 @@
 // Date: 23/10/2022
 // Reference: Peter Sestoft, Grammars and parsing with F#, Tech. Report
 
+
+
 module Interpreter
 
 open System
 
+// Tokens recognised by lexer
 type terminal = 
     Add | Sub | Mul | Div | Mod | Pwr | Lpar | Rpar | Num of int
 
+// Utility functions for string / character handling
 let str2lst s = [for c in s -> c]
 let isblank c = System.Char.IsWhiteSpace c
 let isdigit c = System.Char.IsDigit c
@@ -17,11 +21,13 @@ let lexError = System.Exception("Lexer error")
 let intVal (c:char) = (int)((int)c - (int)'0')
 let parseError = System.Exception("Parser error")
 
+// Scans digits to form an int 
 let rec scInt(iStr, iVal) = 
     match iStr with
     c :: tail when isdigit c -> scInt(tail, 10*iVal+(intVal c))
     | _ -> (iStr, iVal)
 
+// Converts input string into tokens 
 let lexer input = 
     let rec scan input =
         match input with
@@ -85,6 +91,8 @@ let getInputString() : string =
 // P    -> Power
 // Popt -> Power/Optional
 // NR   -> Number -- Terminal
+
+// Parser
 let parser tList = 
     let rec E tList = (T >> Eopt) tList         // >> is forward function composition operator: let inline (>>) f g x = g(f x)
     and Eopt tList = 
@@ -119,6 +127,7 @@ let parser tList =
         | _ -> raise parseError
     E tList
 
+// Parser and evaluator combined into one
 let parseNeval tList = 
     let rec E tList = (T >> Eopt) tList
     and Eopt (tList, value) = 
@@ -160,6 +169,7 @@ let parseNeval tList =
         | _ -> raise parseError
     E tList
 
+ // Prints token list
 let rec printTList (lst:list<terminal>) : list<string> = 
     match lst with
     head::tail -> Console.Write("{0} ",head.ToString())

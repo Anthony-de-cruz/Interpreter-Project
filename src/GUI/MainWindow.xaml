@@ -21,14 +21,15 @@
             <GroupBox Header="Enter Your Expression" Grid.Row="0" Margin="10,10,10,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="61*" />
+                        <ColumnDefinition Width="629*"/>
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBox x:Name="ExprTextBox" Grid.Column="0" Text="" Height="24"
-                             Margin="10,0,5,0" TextChanged="ExprTextBox_TextChanged" />
-                    <Button x:Name="CalculateButton" Grid.Column="1" Content="Calculate" HorizontalAlignment="Center"
-                            Margin="5,10,10,10"
-                            VerticalAlignment="Top" RenderTransformOrigin="0.463,0.13" Width="63"
+                             Margin="10,10,5,10" TextChanged="ExprTextBox_TextChanged" Grid.ColumnSpan="2" />
+                    <Button x:Name="CalculateButton" Grid.Column="2" Content="Calculate" HorizontalAlignment="Left"
+                            Margin="5,0,0,0"
+                            VerticalAlignment="Center" RenderTransformOrigin="0.463,0.13" Width="63"
                             Click="ExprButton_Click" HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center" IsEnabled="False" Height="24" />
                 </Grid>
