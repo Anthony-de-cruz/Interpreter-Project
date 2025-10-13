@@ -24,21 +24,21 @@ let ``Basic Integer Addition Invalid`` () =
         Interpreter.lexer "+"
         |> Interpreter.parser
         |> ignore
-    |> Assert.Throws<System.Exception>
+    |> Assert.Throws<Interpreter.ParseError>
     |> ignore
 
     fun () ->
         Interpreter.lexer "5 +"
         |> Interpreter.parser
         |> ignore
-    |> Assert.Throws<System.Exception>
+    |> Assert.Throws<Interpreter.ParseError>
     |> ignore
 
     fun () ->
         Interpreter.lexer "5 + 3 +"
         |> Interpreter.parser
         |> ignore
-    |> Assert.Throws<System.Exception>
+    |> Assert.Throws<Interpreter.ParseError>
     |> ignore
 
 [<Fact>]
@@ -79,21 +79,21 @@ let ``Basic Integer Division Invalid`` () =
         Interpreter.lexer "/"
         |> Interpreter.parser
         |> ignore
-    |> Assert.Throws<System.Exception>
+    |> Assert.Throws<Interpreter.ParseError>
     |> ignore
     
     fun () ->
         Interpreter.lexer "3 /"
         |> Interpreter.parser
         |> ignore
-    |> Assert.Throws<System.Exception>
+    |> Assert.Throws<Interpreter.ParseError>
     |> ignore
     
     fun () ->
         Interpreter.lexer "/ 3"
         |> Interpreter.parser
         |> ignore
-    |> Assert.Throws<System.Exception>
+    |> Assert.Throws<Interpreter.ParseError>
     |> ignore
     
     fun () ->
@@ -128,21 +128,21 @@ let ``Basic Power implementation Invalid`` () =
         Interpreter.lexer "^"
         |> Interpreter.parser
         |> ignore
-    |> Assert.Throws<System.Exception>
+    |> Assert.Throws<Interpreter.ParseError>
     |> ignore
 
     fun () ->
         Interpreter.lexer "5 ^"
         |> Interpreter.parser
         |> ignore
-    |> Assert.Throws<System.Exception>
+    |> Assert.Throws<Interpreter.ParseError>
     |> ignore
 
     fun () ->
         Interpreter.lexer "5 ^ 3 ^"
         |> Interpreter.parser
         |> ignore
-    |> Assert.Throws<System.Exception>
+    |> Assert.Throws<Interpreter.ParseError>
     |> ignore
     
 [<Fact>]
@@ -181,12 +181,12 @@ let ``Basic Unary Operator Invalid`` () =
         Interpreter.lexer "-"
         |> Interpreter.parser
         |> ignore
-    |> Assert.Throws<System.Exception>
+    |> Assert.Throws<Interpreter.ParseError>
     |> ignore
     
     fun () ->
         Interpreter.lexer "5 ++- 3"
         |> Interpreter.parser
         |> ignore
-    |> Assert.Throws<System.Exception>
+    |> Assert.Throws<Interpreter.ParseError>
     |> ignore
