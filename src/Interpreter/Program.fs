@@ -17,9 +17,10 @@ type terminal =
 let str2lst s = [for c in s -> c]
 let isblank c = System.Char.IsWhiteSpace c
 let isdigit c = System.Char.IsDigit c
-let lexError = System.Exception("Lexer error")
 let intVal (c:char) = (int)((int)c - (int)'0')
-let parseError = System.Exception("Parser error")
+
+exception LexError of string
+exception ParseError of string
 
 // Scans digits to form an int 
 let rec scInt(iStr, iVal) = 
@@ -43,7 +44,7 @@ let lexer input =
         | c :: tail when isblank c -> scan tail
         | c :: tail when isdigit c -> let (iStr, iVal) = scInt(tail, intVal c) 
                                       Num iVal :: scan iStr
-        | _ -> raise lexError
+        | c ->  $"Bad character: {c}" |> LexError |> raise 
     scan (str2lst input)
 
 let getInputString() : string = 
@@ -82,6 +83,16 @@ let getInputString() : string =
 // <P>        ::= <NR> <Popt>
 // <Popt>     ::= "^" <NR> <Popt> | <empty>
 // <NR>       ::= "Num" <value> | "(" <E> ")"
+
+// Updated Grammar 4 in BNF:
+// <E>        ::= <T> <Eopt>
+// <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+// <T>        ::= <U> <Topt>
+// <Topt>     ::= "*" <U> <Topt> | "/" <U> <Topt> | "%" <U> <Topt> | <empty>
+// <U>        ::= "-" <U> | <P>
+// <P>        ::= <NR> <Popt>
+// <Popt>     ::= "^" <NR> <Popt> | <empty>
+// <NR>       ::= "Num" <value> | "Num" <value> "." "Num" <value> | "(" <E> ")"
 
 // E    -> Expression
 // Eopt -> Expression/Optional
@@ -123,8 +134,8 @@ let parser tList =
         | Num value :: tail -> tail
         | Lpar :: tail -> match E tail with 
                           | Rpar :: tail -> tail
-                          | _ -> raise parseError
-        | _ -> raise parseError
+                          | _ ->  "Bad token: Missing Parentheses \")\"" |> ParseError |> raise
+        | _ ->  "Bad token: Missing Operand" |> ParseError |> raise 
     E tList
 
 // Parser and evaluator combined into one
@@ -165,8 +176,8 @@ let parseNeval tList =
         | Lpar :: tail -> let (tLst, tval) = E tail
                           match tLst with 
                           | Rpar :: tail -> (tail, tval)
-                          | _ -> raise parseError
-        | _ -> raise parseError
+                          | _ -> "Bad token: Missing Parentheses" |> ParseError |> raise
+        | _ -> "Bad token: Missing Operand" |> ParseError |> raise
     E tList
 
  // Prints token list
