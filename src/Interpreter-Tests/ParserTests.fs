@@ -175,6 +175,21 @@ let ``Basic Unary Operator Valid`` () =
     |> snd = 8
     |> Assert.True
     
+    Interpreter.lexer "2 ^ - 2"
+    |> fun o ->
+        Interpreter.parser o |> ignore
+        Interpreter.parseNeval o
+    |> snd = 0
+    |> Assert.True
+    
+    Interpreter.lexer "2 ^ -- 2"
+    |> fun o ->
+        Interpreter.parser o |> ignore
+        Interpreter.parseNeval o
+    |> snd = 4
+    |> Assert.True
+    
+    
 [<Fact>]
 let ``Basic Unary Operator Invalid`` () =
     fun () ->
@@ -186,6 +201,13 @@ let ``Basic Unary Operator Invalid`` () =
     
     fun () ->
         Interpreter.lexer "5 ++- 3"
+        |> Interpreter.parser
+        |> ignore
+    |> Assert.Throws<Interpreter.ParseError>
+    |> ignore
+    
+    fun () ->
+        Interpreter.lexer "2 ^ -"
         |> Interpreter.parser
         |> ignore
     |> Assert.Throws<Interpreter.ParseError>

@@ -77,30 +77,32 @@ let getInputString() : string =
 // Updated Grammar 3 in BNF: ( Current )
 // <E>        ::= <T> <Eopt>
 // <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
-// <T>        ::= <U> <Topt>
-// <Topt>     ::= "*" <U> <Topt> | "/" <U> <Topt> | "%" <U> <Topt> | <empty>
-// <U>        ::= "-" <U> | <P>
-// <P>        ::= <NR> <Popt>
-// <Popt>     ::= "^" <NR> <Popt> | <empty>
+// <T>        ::= <P> <Topt>
+// <Topt>     ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
+// <P>        ::= <U> <Popt>
+// <Popt>     ::= "^" <U> <Popt> | <empty>
+// <U>        ::= "-" <U> | <NR>
 // <NR>       ::= "Num" <value> | "(" <E> ")"
 
 // Updated Grammar 4 in BNF:
 // <E>        ::= <T> <Eopt>
 // <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
-// <T>        ::= <U> <Topt>
-// <Topt>     ::= "*" <U> <Topt> | "/" <U> <Topt> | "%" <U> <Topt> | <empty>
-// <U>        ::= "-" <U> | <P>
-// <P>        ::= <NR> <Popt>
-// <Popt>     ::= "^" <NR> <Popt> | <empty>
-// <NR>       ::= "Num" <value> | "Num" <value> "." "Num" <value> | "(" <E> ")"
+// <T>        ::= <P> <Topt>
+// <Topt>     ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>          // Divide should then handle FL differently????
+// <P>        ::= <U> <Popt>
+// <Popt>     ::= "^" <U> <Popt> | <empty>
+// <U>        ::= "-" <U> | <FL>
+// <FL>       ::= <NR> "." "Num" <value> | <NR>
+// <NR>       ::= "Num" <value> | "(" <E> ")"
 
 // E    -> Expression
 // Eopt -> Expression/Optional
 // T    -> Term
 // Topt -> Term/Optional
-// U    -> Unary
 // P    -> Power
 // Popt -> Power/Optional
+// U    -> Unary
+// FL   -> Floating Point
 // NR   -> Number -- Terminal
 
 // Parser
@@ -111,24 +113,24 @@ let parser tList =
         | Add :: tail -> (T >> Eopt) tail
         | Sub :: tail -> (T >> Eopt) tail
         | _ -> tList
-    and T tList = (U >> Topt) tList
+    and T tList = (P >> Topt) tList
     and Topt tList =
         match tList with
-        | Mul :: tail -> (U >> Topt) tail
-        | Div :: tail -> (U >> Topt) tail
-        | Mod :: tail -> (U >> Topt) tail
+        | Mul :: tail -> (P >> Topt) tail
+        | Div :: tail -> (P >> Topt) tail
+        | Mod :: tail -> (P >> Topt) tail
+        | _ -> tList
+    and P tList = (U >> Popt) tList
+    and Popt tList =
+        match tList with
+        | Pwr :: tail -> (U >> Popt) tail
         | _ -> tList
     and U tList =
         match tList with
         | Sub :: tail ->
             let tail' = U tail
             tail'
-        | _ -> P tList
-    and P tList = (NR >> Popt) tList
-    and Popt tList =
-        match tList with
-        | Pwr :: tail -> (NR >> Popt) tail
-        | _ -> tList
+        | _ -> NR tList
     and NR tList =
         match tList with 
         | Num value :: tail -> tail
@@ -148,28 +150,28 @@ let parseNeval tList =
         | Sub :: tail -> let (tLst, tval) = T tail
                          Eopt (tLst, value - tval)
         | _ -> (tList, value)
-    and T tList = (U >> Topt) tList
+    and T tList = (P >> Topt) tList
     and Topt (tList, value) =
         match tList with
-        | Mul :: tail -> let (tLst, tval) = U tail
+        | Mul :: tail -> let (tLst, tval) = P tail
                          Topt (tLst, value * tval)
-        | Div :: tail -> let (tLst, tval) = U tail
+        | Div :: tail -> let (tLst, tval) = P tail
                          Topt (tLst, value / tval)
-        | Mod :: tail -> let (tLst, tval) = U tail
+        | Mod :: tail -> let (tLst, tval) = P tail
                          Topt (tLst, value % tval)
+        | _ -> (tList, value)
+    and P tList = (U >> Popt) tList
+    and Popt (tList, value) =
+        match tList with
+        | Pwr :: tail -> let(tLst, tval) = U tail
+                         Popt (tLst, pown value tval) // When switching to floating point potentially add **
         | _ -> (tList, value)
     and U tList =
         match tList with
         | Sub :: tail ->
             let (tLst, tval) = U tail
             (tLst, -tval)
-        | _ -> P tList
-    and P tList = (NR >> Popt) tList
-    and Popt (tList, value) =
-        match tList with
-        | Pwr :: tail -> let(tLst, tval) = NR tail
-                         Popt (tLst, pown value tval) // When switching to floating point potentially add **
-        | _ -> (tList, value)           
+        | _ -> NR tList
     and NR tList =
         match tList with 
         | Num value :: tail -> (tail, value)
