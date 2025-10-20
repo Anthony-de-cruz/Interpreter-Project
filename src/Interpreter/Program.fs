@@ -4,7 +4,6 @@
 // Reference: Peter Sestoft, Grammars and parsing with F#, Tech. Report
 
 
-
 module Interpreter
 
 open System
@@ -50,29 +49,6 @@ let lexer input =
 let getInputString() : string = 
     Console.Write("Enter an expression: ")
     Console.ReadLine()
-
-// Grammar 0 in BNF: ( Original )
-// <E>        ::= <T> <Eopt>
-// <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
-// <T>        ::= <NR> <Topt>
-// <Topt>     ::= "*" <NR> <Topt> | "/" <NR> <Topt> | <empty>
-// <NR>       ::= "Num" <value> | "(" <E> ")"
-
-// Grammar 1 in BNF:
-// <E>        ::= <T> <Eopt>
-// <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
-// <T>        ::= <NR> <Topt>
-// <Topt>     ::= "*" <NR> <Topt> | "/" <NR> <Topt> | "%" <NR> <Topt> | <empty>
-// <NR>       ::= "Num" <value> | "(" <E> ")"
-
-// Grammar 2 in BNF:
-// <E>        ::= <T> <Eopt>
-// <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
-// <T>        ::= <P> <Topt>
-// <Topt>     ::= "*" <NR> <Topt> | "/" <NR> <Topt> | "%" <NR> <Topt> | <empty>
-// <P>        ::= <NR> <Popt>                 
-// <Popt>     ::= "^" <NR> <Popt> | <empty>
-// <NR>       ::= "Num" <value> | "(" <E> ")"
 
 // Updated Grammar 3 in BNF: ( Current )
 // <E>        ::= <T> <Eopt>
