@@ -10,7 +10,7 @@ open System
 
 // Tokens recognised by lexer
 type terminal = 
-    Add | Sub | Mul | Div | Mod | Pwr | Lpar | Rpar | Num of int
+    Add | Sub | Mul | Div | Mod | Pwr | Lpar | Rpar | Num of int | Flt of float
 
 // Utility functions for string / character handling
 let str2lst s = [for c in s -> c]
