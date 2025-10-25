@@ -1,214 +1,222 @@
 ﻿module ParserTests
 
 open Xunit
+open Interpreter
+
+// To satisfy floating point arithmetic accuracy requirements, cases will be tested against F# computed values.
+// E.g: "5 / 3" = 5 / 3 rather than "5 / 3" = 1.666666...
 
 [<Fact>]
-let ``Basic Integer Addition Valid`` () =
-    Interpreter.lexer "5 + 3"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = 8
-    |> Assert.True
-    
-    Interpreter.lexer "200 + 13 + 45"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = 258
-    |> Assert.True
+let ``Addition Valid`` () =
+    [
+        ("5 + 3", Int 8)
+        ("200 + 13 + 45", Int 258)
+        ("3 + 1.1", Flt 4.1)
+        ("3.256 + 1.59", Flt 4.846)
+    ]
+    |> List.iter (fun (testCase, expectedResult) ->
+        let lexed = lexer testCase
+        parser lexed |> ignore
+        Assert.Equal<number>(expectedResult, parseNeval lexed |> snd)
+    )
 
 [<Fact>]
-let ``Basic Integer Addition Invalid`` () =
-    fun () ->
-        Interpreter.lexer "+"
-        |> Interpreter.parser
-        |> ignore
-    |> Assert.Throws<Interpreter.ParseError>
-    |> ignore
-
-    fun () ->
-        Interpreter.lexer "5 +"
-        |> Interpreter.parser
-        |> ignore
-    |> Assert.Throws<Interpreter.ParseError>
-    |> ignore
-
-    fun () ->
-        Interpreter.lexer "5 + 3 +"
-        |> Interpreter.parser
-        |> ignore
-    |> Assert.Throws<Interpreter.ParseError>
-    |> ignore
-
-[<Fact>]
-let ``Basic Integer Multiplication Valid`` () =
-    Interpreter.lexer "3 * 3"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = 9
-    |> Assert.True
-    
-    Interpreter.lexer "8 * 4 * 3"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = 96
-    |> Assert.True
-
-[<Fact>]
-let ``Basic Integer Division Valid`` () =
-    Interpreter.lexer "6 / 3"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = 2
-    |> Assert.True
-    
-    Interpreter.lexer "12 / 3 / 2"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = 2
-    |> Assert.True
-
-[<Fact>]
-let ``Basic Integer Division Invalid`` () =
-    fun () ->
-        Interpreter.lexer "/"
-        |> Interpreter.parser
-        |> ignore
-    |> Assert.Throws<Interpreter.ParseError>
-    |> ignore
-    
-    fun () ->
-        Interpreter.lexer "3 /"
-        |> Interpreter.parser
-        |> ignore
-    |> Assert.Throws<Interpreter.ParseError>
-    |> ignore
-    
-    fun () ->
-        Interpreter.lexer "/ 3"
-        |> Interpreter.parser
-        |> ignore
-    |> Assert.Throws<Interpreter.ParseError>
-    |> ignore
-    
-    fun () ->
-        Interpreter.lexer "3 / 0"
-        |> fun o ->
-            Interpreter.parser o
+let ``Addition Invalid`` () =
+    [
+        "+"
+        "+ 3"
+        "3 +"
+        "3 + 5 +"
+    ]
+    |> List.iter (fun testCase ->
+        fun () ->
+            lexer testCase
+            |> parser
             |> ignore
-            Interpreter.parseNeval o 
+        |> Assert.Throws<ParseError>
+        |> ignore
+    )
+
+[<Fact>]
+let ``Multiplication Valid`` () =
+    [
+        ("3 * 3", Int 9)
+        ("8 * 4 * 3", Int 96)
+        ("3 * 1.1", Flt (float 3 * 1.1))
+        ("3.256 * 1.59", Flt 5.17704)
+    ]
+    |> List.iter (fun (testCase, expectedResult) ->
+        let lexed = lexer testCase
+        parser lexed |> ignore
+        Assert.Equal<number>(expectedResult, parseNeval lexed |> snd)
+    )
+    
+[<Fact>]
+let ``Multiplication Invalid`` () =
+    [
+        "*"
+        "* 3"
+        "3 *"
+        "3 * 5 *"
+    ]
+    |> List.iter (fun testCase ->
+        fun () ->
+            lexer testCase
+            |> parser
             |> ignore
-    |> Assert.Throws<System.DivideByZeroException>
-    |> ignore
-    
-[<Fact>]
-let ``Basic Power implementation valid`` () =
-    Interpreter.lexer "5 ^ 2"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = 25
-    |> Assert.True
-    
-    Interpreter.lexer "5 ^ 2 ^ 2"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = 625
-    |> Assert.True
-    
-[<Fact>]
-let ``Basic Power implementation Invalid`` () =
-    fun () ->
-        Interpreter.lexer "^"
-        |> Interpreter.parser
+        |> Assert.Throws<ParseError>
         |> ignore
-    |> Assert.Throws<Interpreter.ParseError>
-    |> ignore
+    )
 
-    fun () ->
-        Interpreter.lexer "5 ^"
-        |> Interpreter.parser
-        |> ignore
-    |> Assert.Throws<Interpreter.ParseError>
-    |> ignore
+[<Fact>]
+let ``Division Valid`` () =
+    [
+        ("6 / 3", Flt 2.0)
+        ("5 / 3", Flt (5.0 / 3.0)) 
+        ("12 / 3 / 2", Flt 2.0)
+        ("3.2 / 2", Flt 1.6)
+        ("3.4 / 2.3", Flt (3.4 / 2.3))
+    ]
+    |> List.iter (fun (testCase, expectedResult) ->
+        let lexed = lexer testCase
+        parser lexed |> ignore
+        Assert.Equal<number>(expectedResult, parseNeval lexed |> snd)
+    )
 
-    fun () ->
-        Interpreter.lexer "5 ^ 3 ^"
-        |> Interpreter.parser
+[<Fact>]
+let ``Division Invalid`` () =
+    [
+        "/"
+        "/ 3"
+        "3 /"
+        "3 / 5 /"
+    ]
+    |> List.iter (fun testCase ->
+        fun () ->
+            lexer testCase
+            |> parser
+            |> ignore
+        |> Assert.Throws<ParseError>
         |> ignore
-    |> Assert.Throws<Interpreter.ParseError>
-    |> ignore
+    )
+
+    [
+        "3 / 0"
+        "3 / 0.0"
+    ]
+    |> List.iter (fun testCase ->
+        fun () ->
+            lexer testCase
+            |> parseNeval
+            |> ignore
+        |> Assert.Throws<System.DivideByZeroException>
+        |> ignore
+    )
+
+[<Fact>]
+let ``Modulus Valid`` () =
+    [
+        ("6 % 3", Int 0)
+        ("5 % 3", Int 2) 
+        ("19 % 5 % 3", Int 1)
+        ("3.2 % 2", Flt (3.2 % float 2))
+        ("3.4 % 2.3", Flt 1.1)
+    ]
+    |> List.iter (fun (testCase, expectedResult) ->
+        let lexed = lexer testCase
+        parser lexed |> ignore
+        Assert.Equal<number>(expectedResult, parseNeval lexed |> snd)
+    )
+
+[<Fact>]
+let ``Modulus Invalid`` () =
+    [
+        "%"
+        "% 3"
+        "3 %"
+        "3 % 5 %"
+    ]
+    |> List.iter (fun testCase ->
+        fun () ->
+            lexer testCase
+            |> parser
+            |> ignore
+        |> Assert.Throws<ParseError>
+        |> ignore
+    )
+    
+    [
+        "3 % 0"
+        "3 % 0.0"
+    ]
+    |> List.iter (fun testCase ->
+        fun () ->
+            lexer testCase
+            |> parseNeval
+            |> ignore
+        |> Assert.Throws<System.DivideByZeroException>
+        |> ignore
+    )
+
+[<Fact>]
+let ``Power Valid`` () =
+    [
+        ("5 ^ 2", Int 25)
+        ("5 ^ 2 ^ 2", Int 625)
+        ("2 ^ 1.1", Flt (2 ** 1.1))
+    ]
+    |> List.iter (fun (testCase, expectedResult) ->
+        let lexed = lexer testCase
+        parser lexed |> ignore
+        Assert.Equal<number>(expectedResult, parseNeval lexed |> snd)
+    )
     
 [<Fact>]
-let ``Basic Unary Operator Valid`` () =
-    Interpreter.lexer "-2"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = -2
-    |> Assert.True
-    
-    Interpreter.lexer "5 -- 2"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = 7
-    |> Assert.True
-    
-    Interpreter.lexer "5 +- 2"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = 3
-    |> Assert.True
-    
-    Interpreter.lexer "5 +-- 3"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = 8
-    |> Assert.True
-    
-    Interpreter.lexer "2 ^ - 2"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = 0
-    |> Assert.True
-    
-    Interpreter.lexer "2 ^ -- 2"
-    |> fun o ->
-        Interpreter.parser o |> ignore
-        Interpreter.parseNeval o
-    |> snd = 4
-    |> Assert.True
-    
+let ``Power Invalid`` () =
+    [
+        "^"
+        "^ 3"
+        "3 ^"
+        "3 ^ 5 ^"
+    ]
+    |> List.iter (fun testCase ->
+        fun () ->
+            lexer testCase
+            |> parser
+            |> ignore
+        |> Assert.Throws<ParseError>
+        |> ignore
+    )
     
 [<Fact>]
-let ``Basic Unary Operator Invalid`` () =
-    fun () ->
-        Interpreter.lexer "-"
-        |> Interpreter.parser
-        |> ignore
-    |> Assert.Throws<Interpreter.ParseError>
-    |> ignore
+let ``Unary Valid`` () =
+    [
+        ("-2", Int -2)
+        ("5 -- 2", Int 7)
+        ("5 +- 2", Int 3)
+        ("5 +-- 3", Int 8)
+        ("2 ^- 2", Int 0)
+        ("2 ^-- 2", Int 4)
+    ]
+    |> List.iter (fun (testCase, expectedResult) ->
+        let lexed = lexer testCase
+        parser lexed |> ignore
+        Assert.Equal<number>(expectedResult, parseNeval lexed |> snd)
+    )
     
-    fun () ->
-        Interpreter.lexer "5 ++- 3"
-        |> Interpreter.parser
+[<Fact>]
+let ``Unary Invalid`` () =
+    [
+        "-"
+        "5 ++- 3"
+        "2 ^ -"
+        "2--+--2" // Do we care to make this a valid case?
+    ]
+    |> List.iter (fun testCase ->
+        fun () ->
+            lexer testCase
+            |> parser
+            |> ignore
+        |> Assert.Throws<ParseError>
         |> ignore
-    |> Assert.Throws<Interpreter.ParseError>
-    |> ignore
-    
-    fun () ->
-        Interpreter.lexer "2 ^ -"
-        |> Interpreter.parser
-        |> ignore
-    |> Assert.Throws<Interpreter.ParseError>
-    |> ignore
+    )

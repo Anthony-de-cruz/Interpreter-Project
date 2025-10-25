@@ -1,22 +1,58 @@
 module LexerTests
 
 open Xunit
+open Interpreter
 
 [<Fact>]
-let ``Basic Symbol Lexing Valid`` () =
-    Interpreter.lexer "5 + 3" = [Interpreter.terminal.Num(5); Interpreter.terminal.Add; Interpreter.terminal.Num(3)]
-    |> Assert.True
-    
-    Interpreter.lexer "1 * 2" = [Interpreter.terminal.Num(1); Interpreter.terminal.Mul; Interpreter.terminal.Num(2)]
-    |> Assert.True
-    
-    Interpreter.lexer "3 ^ 8" = [Interpreter.terminal.Num(3); Interpreter.terminal.Pwr; Interpreter.terminal.Num(8)]
-    |> Assert.True
+let ``Basic Binop Lexing Valid`` () =
+    [
+        ("3 + 5", [terminal.Num(number.Int(3)); terminal.Add; terminal.Num(number.Int(5))])
+        ("1 * 2", [terminal.Num(number.Int(1)); terminal.Mul; terminal.Num(number.Int(2))])
+        ("3 ^ 8", [terminal.Num(number.Int(3)); terminal.Pwr; terminal.Num(number.Int(8))])
+    ]
+    |> List.iter (fun (testCase, expectedResult) ->
+        Assert.Equal<terminal>(expectedResult, lexer testCase)
+    )
     
 [<Fact>]
 let ``Basic Symbol Lexing Invalid`` () =
-    fun () -> Interpreter.lexer "3 £ 4"
-              |> ignore
-    |> Assert.Throws<Interpreter.LexError>
-    |> ignore
+    [
+        "3 £ 4"
+        "5 5 :"
+    ]
+    |> List.iter (fun testCase ->
+        fun () ->
+            lexer testCase
+            |> ignore
+        |> Assert.Throws<LexError>
+        |> ignore
+    )
+
+[<Fact>]
+let ``Basic Floating Point Lexing Valid`` () =
+    [
+        ("3.8", [terminal.Num(number.Flt(3.8))])
+        ("3.008", [terminal.Num(number.Flt(3.008))])
+        ("3.811", [terminal.Num(number.Flt(3.811))])
+        ("0.811", [terminal.Num(number.Flt(0.811))])
+        ("100.001", [terminal.Num(number.Flt(100.001))])
+    ]
+    |> List.iter (fun (testCase, expectedResult) ->
+        Assert.Equal<terminal>(expectedResult, lexer testCase)
+    )
     
+[<Fact>]
+let ``Basic Floating Point Lexing Invalid`` () =
+    [
+        "7."
+        ".7"
+        "5 .2"
+        "2. 5"
+    ]
+    |> List.iter (fun testCase ->
+        fun () ->
+            lexer testCase
+            |> ignore
+        |> Assert.Throws<LexError>
+        |> ignore
+    )
