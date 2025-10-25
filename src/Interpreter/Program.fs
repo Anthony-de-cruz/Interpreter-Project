@@ -9,7 +9,7 @@ module Interpreter
 open System
 
 // Superset of CX, FT, IN
-type number =  Int of int | Flt of float
+type number =  Int of int | Flt of float | Cpx of char
 
 // Tokens recognised by lexer
 type terminal = 
@@ -19,6 +19,7 @@ type terminal =
 let str2lst s = [for c in s -> c]
 let isBlank c = Char.IsWhiteSpace c
 let isDigit c = Char.IsDigit c
+let isAlpha c = Char.IsLetter c
 let intVal (c:char) = int (int c - int '0')
 
 exception LexError of string
@@ -39,7 +40,7 @@ let scNum(iStr, iVal, startingPos) =
         // Find the positional difference between '.' and our fractional scan.
         let fractional = (float fractional / 10.0 ** (float fractionalPos - (float wholePos + 1.0)))
         (rest, Flt (float whole + fractional), fractionalPos)
-    | '.' :: _ -> $"Missing fractional digit @ {wholePos}" |> LexError |> raise
+    | '.' :: _ -> $"Missing fractional digit @ position {wholePos}" |> LexError |> raise
     | _ -> (iStr, Int whole, wholePos)
 
 // Converts input string into tokens 
@@ -57,8 +58,8 @@ let lexer input =
         | ')'::tail -> Rpar:: scan tail (pos + 1)
         | c :: tail when isBlank c -> scan tail (pos + 1)
         | c :: tail when isDigit c -> let iStr, iVal, position = scNum(tail, intVal c, pos + 1)
-                                      Num iVal :: scan iStr (position + 1) // HERE
-        | c ->  $"Bad character: {c} @ {pos}" |> LexError |> raise 
+                                      Num iVal :: scan iStr (position + 1)
+        | c :: _ ->  $"Bad character: {c} @ position {pos}" |> LexError |> raise 
     scan (str2lst input) 0
 
 let getInputString() : string = 
@@ -174,6 +175,7 @@ let parseNeval tList =
     and Topt (tList, value) =
         match tList with
         | Mul :: tail -> let tList', tVal = P tail
+                         
                          match promoteNum(value, tVal) with
                          | Int value', Int tVal' -> Topt(tList', Int (value' * tVal'))
                          | Flt value', Flt tVal' -> Topt(tList', Flt (value' * tVal'))
