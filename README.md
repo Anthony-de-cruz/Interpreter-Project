@@ -26,7 +26,7 @@
 // <Popt>     ::= "^" <NR> <Popt> | <empty>
 // <NR>       ::= "Num" <value> | "(" <E> ")"
 
-// Updated Grammar 3 in BNF: ( Current )
+// Updated Grammar 3 in BNF:
 // <E>        ::= <T> <Eopt>
 // <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
 // <T>        ::= <P> <Topt>
@@ -36,16 +36,17 @@
 // <U>        ::= "-" <U> | <NR>
 // <NR>       ::= "Num" <value> | "(" <E> ")"
 
-// Updated Grammar 4 in BNF:
+// Updated Grammar 4 in BNF: ( Current )
 // <E>        ::= <T> <Eopt>
 // <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
 // <T>        ::= <P> <Topt>
-// <Topt>     ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>          // Divide should then handle FL differently????
+// <Topt>     ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
 // <P>        ::= <U> <Popt>
 // <Popt>     ::= "^" <U> <Popt> | <empty>
-// <U>        ::= "-" <U> | <FL>
-// <FL>       ::= <NR> "." "Num" <value> | <NR>
-// <NR>       ::= "Num" <value> | "(" <E> ")"
+// <U>        ::= "-" <U> | <NM>
+// <NM>       ::= <IN> | <FL> | "(" <E> ")"
+// <IN>       ::= <digit>+
+// <FL>       ::= <digit>+ "." <digit>+
 
 // E    -> Expression
 // Eopt -> Expression/Optional
@@ -55,5 +56,7 @@
 // Popt -> Power/Optional
 // U    -> Unary
 // FL   -> Floating Point
-// NR   -> Number -- Terminal
+// NM   -> Number
+// IN   -> Integer
+// FL   -> Float
 ```
