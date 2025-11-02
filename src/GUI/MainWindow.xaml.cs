@@ -2,6 +2,9 @@
 using System.Windows;
 using System.Windows.Media;
 using Microsoft.FSharp.Collections;
+using OxyPlot;
+using OxyPlot.Series;
+using OxyPlot.Wpf;
 
 namespace GUI;
 
@@ -42,6 +45,36 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// Handles plotting
+    /// </summary>
+    private void plot()
+    {
+        // Make a PlotModel
+        var model = new PlotModel { Title = "Smoke Alarm" };
+
+        // Make a LineSeries 
+        var series = new LineSeries
+        {
+            Title = "y = x + 2",
+            StrokeThickness = 2,
+            Color = OxyColors.SkyBlue
+        };
+
+        // Add hardcoded points 
+        series.Points.Add(new DataPoint(-5, -3)); 
+        series.Points.Add(new DataPoint(-2, 0));
+        series.Points.Add(new DataPoint(0, 2));
+        series.Points.Add(new DataPoint(2, 4));
+        series.Points.Add(new DataPoint(5, 7));
+
+        // Add the series to the model
+        model.Series.Add(series);
+
+        // Assign  model to  PlotView 
+        PlotView.Model = model;
+    }
+
+    /// <summary>
     /// Handle calculate button click.
     /// </summary>
     /// <param name="sender"></param>
@@ -69,6 +102,9 @@ public partial class MainWindow : Window
             terminalListBuilder.Append($"{i} ");
 
         OutputTextBox.Foreground = Brushes.Black;
-        OutputTextBox.Text = $"{terminalListBuilder}= {result}";
+
+        OutputTextBox.Text = $"{terminalListBuilder}= {result}"; // Display calculation and result
+
+        plot();
     }
 }
