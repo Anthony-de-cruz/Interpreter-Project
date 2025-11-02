@@ -6,6 +6,44 @@
         mc:Ignorable="d"
         Title="TutorialWindow" Height="450" Width="800">
     <Grid>
-        
+        <GroupBox Header="Welcome to the interpreter tutorial!" Grid.Row="0" Margin="10,10,10,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <TextBlock TextWrapping="Wrap" Margin="10" xml:space="preserve">
+To Use: 
+  1. Type an expression in the input box
+  2. Press 'Calculate' to evaluate
+  3. Tokens and results will appear below
+
+General Info:
+    - Our intpreter uses left associativity 
+    - There is an order of precedence for the operations (follows BIDMAS/BODMAS)
+    - We have unit testing (Xunit)
+                    
+Valid tokens:
+    - Numbers: 0,1,2,...
+    - Operators: +,-,*,/,%,^
+    - Parentheses: ()
+
+Valid Syntax:
+    - Expressions can be made up of a combination of numbers, operators and parentheses  
+    - Expressions must be complete e.g cannot have '5+'
+
+Valid syntax examples:
+    - 5 + 3
+    - 2 * (3 + 4)
+    - 10 / (2 + 3)
+
+Invalid syntax examples:
+    - 5+
+    - 2^
+                    
+Near Future Additions:
+    - Floating point (Dot .)
+    - Exponent E for exponential notation of floats
+    - Parse Tree visualization
+                </TextBlock>
+            </ScrollViewer>
+        </GroupBox>
+
     </Grid>
 </Window>

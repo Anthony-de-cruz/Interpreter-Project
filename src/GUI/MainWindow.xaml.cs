@@ -102,7 +102,6 @@ public partial class MainWindow : Window
             terminalListBuilder.Append($"{i} ");
 
         OutputTextBox.Foreground = Brushes.Black;
-
         OutputTextBox.Text = $"{terminalListBuilder}= {result}"; // Display calculation and result
 
         plot();
