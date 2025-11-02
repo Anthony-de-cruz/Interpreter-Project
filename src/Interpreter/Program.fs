@@ -7,7 +7,6 @@
 module Interpreter
 
 open System
-open System.Linq
 
 // Superset of CX, FT, IN
 type number =  Int of int | Flt of float
@@ -145,8 +144,7 @@ let getInputString() : string =
 
 // Parser
 // >> is forward function composition operator: let inline (>>) f g x = g(f x)
-let parser tList symbolTable =
-    let symbolTable = Map.empty
+let parser tList =
     let rec E tList = (T >> Eopt) tList         // >> is forward function composition operator: let inline (>>) f g x = g(f x)
     and Eopt tList = 
         match tList with
@@ -199,7 +197,8 @@ let promoteNum (lhs, rhs) =
 // Parser and evaluator combined into one
 let parseNeval
     (tList: terminal list)
-    (symbolTable: Map<string, number>) = 
+    (symbolTable: Map<string, number>)
+    : terminal list * number = 
     let rec E tList = (T >> Eopt) tList
     and Eopt (tList, value) = 
         match tList with
