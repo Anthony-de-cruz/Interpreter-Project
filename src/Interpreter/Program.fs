@@ -13,7 +13,7 @@ type number =  Int of int | Flt of float
 
 // Tokens recognised by lexer
 type terminal = 
-    Add | Sub | Mul | Div | Mod | Pwr | Eql | Lpar | Rpar | Semi | Num of number | Sym of string
+    Add | Sub | Mul | Div | Mod | Pwr | Eql | Lpar | Rpar | Cma | Semi | Num of number | Sym of string
 
 // Utility functions for string / character handling
 let str2lst s = [for c in s -> c]
@@ -61,6 +61,7 @@ let lexer input =
         | '='::tail -> Eql :: scan tail line (pos + 1)
         | '('::tail -> Lpar:: scan tail line (pos + 1)
         | ')'::tail -> Rpar:: scan tail line (pos + 1)
+        | ','::tail -> Cma :: scan tail line (pos + 1)
         | ';'::tail -> Semi:: scan tail (line + 1) 0
         | c :: tail when isBlank c -> scan tail line (pos + 1)
         | c :: tail when isDigit c -> let iStr, iVal, pos = scNum(tail, intVal c, pos + 1)
@@ -74,41 +75,17 @@ let getInputString() : string =
     Console.Write("Enter an expression: ")
     Console.ReadLine()
 
-// Updated Grammar 4 in BNF: ( Current )
-// <E>        ::= <T> <Eopt>
-// <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
-// <T>        ::= <P> <Topt>
-// <Topt>     ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
-// <P>        ::= <U> <Popt>
-// <Popt>     ::= "^" <U> <Popt> | <empty>
-// <U>        ::= "-" <U> | <NM>
-// <NM>       ::= <IN> | <FL> | "(" <E> ")"
-// <IN>       ::= <digit>+
-// <FL>       ::= <digit>+ "." <digit>+
-
-// Updated Grammar 5 in BNF: ( TBC )
+// Grammar 5 in BNF: ( Current )
 //
 // STATEMENTS
-// <STA>    ::= ( <ASN> | <DEF> | <CAL> ) ";"
-//            | <STA> <STA>
-//            | <eof>
-//            | <empty>
-// <ASN>    ::= <SYM> "=" <E>
-//            | <SYM> "++"
-//            | <SYM> "--"                                                 // This shouldn't conflict with unary if this is "executed" by the statement parser.
-// <DEF>    ::= "def" <SYM> "(" ( <DEFopt> | <empty> ) ")" "{" <STA> "}"
-// <DEFopt> ::= <SYM> | <DEFopt> "," <DEFopt>
-// <CLL>    ::= <SYM> "(" <CALopt> | <empty> ")"
-// <CALopt> ::= <NM> | <CALopt> "," <CALopt>
-// <SYM>    ::= <alpha+>                                                    // Written to a symbol table on ASN or DEF. Derived in CAL or E.
-//
-// STATEMENTS SIMPLIFIED
-// <STA>    ::= ( <ASN> | <PLT> ) ";"
+// <STA>    ::= ( <ASN> | <PLT> | <PTR> ) ";"
 //            | <STA> <STA>
 //            | <empty>
 // <ASN>    ::= "let" <SYM> "=" <NM>
-// <PLT>    ::= <SYM> <NM>         // Builtin plot function.
-// <SYM>    ::= <alpha+>          // Where not reserved? // Written to a symbol table on ASN. Derived in E.
+// <PLT>    ::= "plot" <NM> <PLTopt>
+// <PLTopt> ::= "," <NM> <PLopt> | <empty>
+// <PRT>    ::= "print" <NM>
+// <SYM>    ::= <alpha+>
 //
 // EXPRESSIONS
 // <E>    ::= <T> <Eopt>
@@ -118,29 +95,60 @@ let getInputString() : string =
 // <P>    ::= <U> <Popt>
 // <Popt> ::= "^" <U> <Popt> | <empty>
 // <U>    ::= "-" <U> | <NM>
-// <NM>   ::= <IN> | <FL> | <VAR> | "(" <E> ")"
+// <NM>   ::= <IN> | <FL> | <SYM> | "(" <E> ")"
 // <IN>   ::= <digit+>
 // <FL>   ::= <digit+> "." <digit+>
 
-//  <VAR>        ::= 
-//  <FUN>        ::= <symbol> "(" <ARG> ")" "{" 
-//  <ARG>        ::= <symbol> | <symbol> "," <ARG>
+// Updated Grammar 6 in BNF: ( TBC )
+//
+// STATEMENTS
+// <STA>    ::= ( <ASN> | <DEF> | <CAL> ) ";"
+//            | <STA> <STA>
+//            | <empty>
+// <ASN>    ::= "let" <SYM> "=" <E>                                // Where not reserved variable.
+//            | <SYM> "++"                                         // Where var exists in symbol table.
+//            | <SYM> "--"                                         // Where var exists in symbol table.
+// <DEF>    ::= "def" <SYM> "(" <DEFopt> ")" "{" <STA> "}"         // Where not reserved.
+// <DEFopt> ::= <SYM> <DEFopt> | "," <DEFopt> | <empty>            // Where not reserved.
+// <CLL>    ::= <SYM> "(" <CLLopt> ")"                             // Where def exists in symbol table.
+// <CLLopt> ::= <NM> <CLLopt> | "," <CLLopt> | <empty>
+// <SYM>    ::= <alpha+>
+//
+// EXPRESSIONS
+// <E>      ::= <T> <Eopt>
+// <Eopt>   ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+// <T>      ::= <P> <Topt>
+// <Topt>   ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
+// <P>      ::= <U> <Popt>
+// <Popt>   ::= "^" <U> <Popt> | <empty>
+// <U>      ::= "-" <U> | <NM>
+// <NM>     ::= <IN>
+//            | <FL>
+//            | <SYM>                                              // Where var exists in symbol table. 
+//            | <CLL>                                              // Where def exists in symbol table. 
+//            | "(" <E> ")"                  
+// <IN>     ::= <digit+>
+// <FL>     ::= <digit+> "." <digit+>
 
 // STATEMENTS
-// ASN  -> Assignment
-// VAR  -> Symbol
+// STA    -> Statement
+// ASN    -> Assignment
+// PLT    -> Plot
+// PLTopt -> Plot
+// SYM    -> Symbol
+//
 // EXPRESSIONS
-// E    -> Expression
-// Eopt -> Expression/Optional
-// T    -> Term
-// Topt -> Term/Optional
-// P    -> Power
-// Popt -> Power/Optional
-// U    -> Unary
-// NM   -> Number
-// IN   -> Integer
-// FL   -> Floating Point
-// CX   -> Complex Number
+// E      -> Expression
+// Eopt   -> Expression/Optional
+// T      -> Term
+// Topt   -> Term/Optional
+// P      -> Power
+// Popt   -> Power/Optional
+// U      -> Unary
+// NM     -> Number
+// IN     -> Integer
+// FL     -> Floating Point
+// CX     -> Complex Number
 
 // Parser
 // >> is forward function composition operator: let inline (>>) f g x = g(f x)
@@ -192,7 +200,6 @@ let promoteNum (lhs, rhs) =
     | Flt lhs, Int rhs -> (Flt lhs, Flt (float rhs))
     | Flt lhs, Flt rhs -> (Flt lhs, Flt rhs)
     
-
 
 // Parser and evaluator combined into one
 let parseNeval
@@ -263,48 +270,61 @@ let parseNeval
         | _ -> "Bad token: Missing Operand" |> ParseError |> raise
     E tList
 
+
 let parseNexec 
     (tList: terminal list) 
     (symbolTable: Map<string, number>) 
-    : Map<string, number> * number list =
-    let rec STA
-        (tList: terminal list)
-        (symbolTable: Map<string, number>)
-        (plotTable: number list)
-        (line: int)
-        : Map<string, number> * number list =
+    : terminal list * Map<string, number> * number list list =
+    let rec STA tList symbolTable plotTable =
         match tList with
-        | Sym "let" :: tail -> 
-            // <ASN> ::= "let" <SYM> "=" <E>
-            match tail with
-            | Sym name :: Eql :: tail ->
-                let tail', value = parseNeval tail symbolTable
-                match tail' with
-                | Semi :: tail' ->
-                    // Update symbol table and continue parsing
-                    let symbolTable' = Map.add name value symbolTable
-                    STA tail' symbolTable' plotTable (line + 1)
-                | _ -> $"Expected ';' after assignment @ {line}:0" |> ParseError |> raise
-            | _ -> $"Expected symbol and '=' after 'let' @ {line}:0" |> ParseError |> raise
-        | Sym "plot" :: tail ->
-            // <PLT> ::= "plot" <E>
+        | [] -> (tList, symbolTable, plotTable)
+        | Sym "let" :: _ -> ASN tList symbolTable plotTable
+        | Sym "plot" :: _ -> PLT tList symbolTable plotTable
+        | Sym "print" :: _ -> PRT tList symbolTable plotTable
+        | _ -> (tList, symbolTable, plotTable)
+    
+    and ASN tList symbolTable plotTable =
+        match tList with
+        | Sym "let" :: Sym name :: Eql :: tail ->
             let tail', value = parseNeval tail symbolTable
             match tail' with
-            | Semi :: tail ->
-                STA tail symbolTable (plotTable @ [value]) (line + 1)
-            | _ -> $"Expected ';' after plot statement @ {line}:0" |> ParseError |> raise
-        | Sym "print" :: tail ->
-            Console.WriteLine("PRINT")
-            match tail with
-            | Semi :: tail ->
-                STA tail symbolTable plotTable (line + 1)
-            | _ -> $"Expected ';' after print statement @ {line}:0" |> ParseError |> raise
-        | [] -> (symbolTable, plotTable)
-        | _ -> $"Bad token: Expecting statement @ {line}:0" |> ParseError |> raise
+            | Semi :: tail'' ->
+                let symbolTable' = Map.add name value symbolTable
+                STA tail'' symbolTable' plotTable
+            | _ -> "Expected ';' after assignment" |> ParseError |> raise
+        | _ -> "Expected symbol and '=' after 'let'" |> ParseError |> raise
     
-    STA tList symbolTable [] 0
+    and PLT tList symbolTable plotTable =
+        match tList with
+        | Sym "plot" :: tail ->
+            let tail', value = parseNeval tail symbolTable
+            PLTopt tail' symbolTable plotTable [value]
+        | _ -> "Expected 'plot' statement" |> ParseError |> raise
+    
+    and PLTopt tList symbolTable plotTable polynomial =
+        match tList with
+        | Cma :: tail ->
+            let tail', value = parseNeval tail symbolTable
+            PLTopt tail' symbolTable plotTable (polynomial @ [value])
+        | Semi :: tail ->
+            STA tail symbolTable (plotTable @ [polynomial])
+        | _ -> "Expected ',' or ';' in plot statement" |> ParseError |> raise
+    
+    and PRT tList symbolTable plotTable =
+        match tList with
+        | Sym "print" :: tail ->
+            let tail', value = parseNeval tail symbolTable
+            match tail' with
+            | Semi :: tail'' ->
+                let timeStr = DateTime.Now.ToString("hh:mm:ss")
+                Console.WriteLine($"{timeStr}| {value}")
+                STA tail'' symbolTable plotTable
+            | _ -> "Expected ';' after print statement" |> ParseError |> raise
+        | _ -> "Expected 'print' statement" |> ParseError |> raise
+    
+    STA tList symbolTable []
 
-
+ 
  // Prints token list
 let rec printTList (lst:list<terminal>) : list<string> = 
     match lst with
@@ -321,7 +341,7 @@ let main _  =
     let oList = lexer input
     let _ = printTList oList
     let symbolTable: Map<string, number> = Map.empty
-    let symbolTable', plotTable = parseNexec oList symbolTable 
+    let _, symbolTable', plotTable = parseNexec oList symbolTable 
     Console.WriteLine($"Symbol Table: {symbolTable'}")
     Console.WriteLine($"Plot Table: {plotTable}")
     //let Out = parseNeval oList
