@@ -56,3 +56,16 @@ let ``Basic Floating Point Lexing Invalid`` () =
         |> Assert.Throws<LexError>
         |> ignore
     )
+    
+[<Fact>]
+let ``Basic Symbol Lexing Valid`` () =
+    [
+        ("x", [terminal.Sym("x")])
+        ("y", [terminal.Sym("y")])
+        ("varname", [terminal.Sym("varname")])
+        ("myvar", [terminal.Sym("myvar")])
+        ("3 + variable", [terminal.Num(number.Int(3)); terminal.Add; terminal.Sym("variable")])
+    ]
+    |> List.iter (fun (testCase, expectedResult) ->
+        Assert.Equal<terminal>(expectedResult, lexer testCase)
+    )
