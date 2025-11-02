@@ -1,10 +1,11 @@
-﻿using System.Text;
-using System.Windows;
-using System.Windows.Media;
-using Microsoft.FSharp.Collections;
+﻿using Microsoft.FSharp.Collections;
 using OxyPlot;
+using OxyPlot.Axes;
 using OxyPlot.Series;
 using OxyPlot.Wpf;
+using System.Text;
+using System.Windows;
+using System.Windows.Media;
 
 namespace GUI;
 
@@ -47,30 +48,55 @@ public partial class MainWindow : Window
     /// <summary>
     /// Handles plotting
     /// </summary>
-    private void plot()
+    private void plot(float[] plotTable)
     {
-        // Make a PlotModel
-        var model = new PlotModel { Title = "Smoke Alarm" };
+        var model = new PlotModel();
 
-        // Make a LineSeries 
-        var series = new LineSeries
+        // Add horizontal lines for each value
+        for (int i = 0; i < plotTable.Length; i++)
         {
-            Title = "y = x + 2",
-            StrokeThickness = 2,
-            Color = OxyColors.SkyBlue
-        };
+            float yValue = plotTable[i];
+            var lineSeries = new LineSeries
+            {
+                Title = $"y = {yValue}"
+            };
 
-        // Add hardcoded points 
-        series.Points.Add(new DataPoint(-5, -3)); 
-        series.Points.Add(new DataPoint(-2, 0));
-        series.Points.Add(new DataPoint(0, 2));
-        series.Points.Add(new DataPoint(2, 4));
-        series.Points.Add(new DataPoint(5, 7));
+            // Add X-axis (centered at 0)
+            model.Axes.Add(new LinearAxis
+            {
+                Position = AxisPosition.Bottom,
+                Minimum = -100,
+                Maximum = 100,
+                Title = "X",
+                AxislineStyle = LineStyle.Solid,
+                AxislineThickness = 2,
+                MajorGridlineStyle = LineStyle.Solid,
+                MinorGridlineStyle = LineStyle.Dot,
+                MajorGridlineColor = OxyColor.FromRgb(200, 200, 200),
+                MinorGridlineColor = OxyColor.FromRgb(230, 230, 230)
+            });
 
-        // Add the series to the model
-        model.Series.Add(series);
+            // Add Y-axis (centered at 0)
+            model.Axes.Add(new LinearAxis
+            {
+                Position = AxisPosition.Left,
+                Minimum = -100,
+                Maximum = 100,
+                Title = "Y",
+                AxislineStyle = LineStyle.Solid,
+                AxislineThickness = 2,
+                MajorGridlineStyle = LineStyle.Solid,
+                MinorGridlineStyle = LineStyle.Dot,
+                MajorGridlineColor = OxyColor.FromRgb(200, 200, 200),
+                MinorGridlineColor = OxyColor.FromRgb(230, 230, 230)
+            });
 
-        // Assign  model to  PlotView 
+            lineSeries.Points.Add(new DataPoint(-100, yValue));
+            lineSeries.Points.Add(new DataPoint(100, yValue));
+
+            model.Series.Add(lineSeries);
+        }
+
         PlotView.Model = model;
     }
 
@@ -82,12 +108,13 @@ public partial class MainWindow : Window
     private void ExprButton_Click(object sender, RoutedEventArgs e)
     {
         FSharpList<Interpreter.terminal> lexed;
-        int result;
+        FSharpList<Interpreter.number> plotTable;
         try
         {
             lexed = Interpreter.lexer(ExprTextBox.Text);
-            Interpreter.parser(lexed);
-            (_, result) = Interpreter.parseNeval(lexed);
+            //Interpreter.parser(lexed);
+            (_, plotTable) = Interpreter.parseNexec(
+                lexed, MapModule.Empty<string, Interpreter.number>());
         }
         // Todo - Add new exception types to Interpreter to give better feedback.
         catch (Exception ex)
@@ -101,9 +128,18 @@ public partial class MainWindow : Window
         foreach (Interpreter.terminal i in lexed)
             terminalListBuilder.Append($"{i} ");
 
-        OutputTextBox.Foreground = Brushes.Black;
-        OutputTextBox.Text = $"{terminalListBuilder}= {result}"; // Display calculation and result
+        float[] plotArray = new float[plotTable.Length];
+        for (int i = 0; i < plotTable.Length; i++)
+        {
+            if (plotTable[i].IsInt)
+                plotArray[i] = ((Interpreter.number.Int)plotTable[i]).Item;
+            else if (plotTable[i].IsFlt)
+                plotArray[i] = (float)((Interpreter.number.Flt)plotTable[i]).Item;
+        }
 
-        plot();
+        OutputTextBox.Foreground = Brushes.Black;
+        //OutputTextBox.Text = $"{terminalListBuilder}= {result}"; // Display calculation and result
+
+        plot(plotArray);
     }
 }
