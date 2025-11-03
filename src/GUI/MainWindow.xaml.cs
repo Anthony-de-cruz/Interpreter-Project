@@ -1,6 +1,7 @@
 ﻿using Microsoft.FSharp.Collections;
 using OxyPlot;
 using OxyPlot.Axes;
+using OxyPlot.Legends;
 using OxyPlot.Series;
 using OxyPlot.Wpf;
 using System.Text;
@@ -48,7 +49,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// Handles plotting
     /// </summary>
-    private void plot(List<List<double>> coefficientLists)
+    private void plot(float[][] polyCoefficients)
     {
         var model = new PlotModel();
 
@@ -85,7 +86,7 @@ public partial class MainWindow : Window
             MinorGridlineColor = OxyColor.FromRgb(230, 230, 230)
         });
 
-        foreach (var coeffs in coefficientLists)
+        foreach (var coeffs in polyCoefficients)
         {
             var lineSeries = new LineSeries();
             
@@ -94,7 +95,7 @@ public partial class MainWindow : Window
                 double yVal = 0.0;
 
                 // calculate y = a[0] + b[1]*x + c[2] * x^2 + ....
-                for (int i = 0; i < coeffs.Count; i++)
+                for (int i = 0; i < coeffs.Length; i++)
                 {
 
                     yVal += coeffs[i] * Math.Pow(currentX, i);
@@ -118,18 +119,13 @@ public partial class MainWindow : Window
     /// <param name="e"></param>
     private void ExprButton_Click(object sender, RoutedEventArgs e)
     {
-        /*
-        FSharpList<Interpreter.terminal> lexed;
-        FSharpList<Interpreter.number> plotTable;
-        
-        // parseExex returns a list of list of floats
-        FSharpList<FSharpList<double>> fsharpPlotList;
+        Interpreter.number[][] fsPlots;
         try
         {
-            lexed = Interpreter.lexer(ExprTextBox.Text);
+            FSharpList<Interpreter.terminal>  lexed = Interpreter.lexer(ExprTextBox.Text);
             //Interpreter.parser(lexed);
-            (_, fsharpPlotList) = Interpreter.parseNexec(
-                lexed, MapModule.Empty<string, Interpreter.number>());
+            var result = Interpreter.parseNexecCSharp(lexed, MapModule.Empty<string, Interpreter.number>());
+            fsPlots = result.Item2;
         }
         // Todo - Add new exception types to Interpreter to give better feedback.
         catch (Exception ex)
@@ -139,25 +135,37 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Convert fsharp to csharp list type
-        var plotList = new List<List<double>>();
-        foreach (var fsharpCoeffs in fsharpPlotList)
+        // Convert F# array to C# array.
+        float[][] plotArray = new float[fsPlots.Length][];
+        for (int i = 0; i < fsPlots.Length; i++)
         {
-            plotList.Add(new List<double>(fsharpCoeffs));
+            plotArray[i] = new float[fsPlots[i].Length];
+            for (int j = 0; j < fsPlots[i].Length; j++)
+            {
+                if (fsPlots[i][j].IsInt)
+                    plotArray[i][j] = ((Interpreter.number.Int)fsPlots[i][j]).Item;
+                else if (fsPlots[i][j].IsFlt)
+                    plotArray[i][j] = (float)((Interpreter.number.Flt)fsPlots[i][j]).Item;
+            }
         }
-        */
 
-        var plotList = new List< List<double>>();
-
-        plotList.Add(new List<double> { 5.0 });
-
-        plotList.Add(new List<double> { 5.0, 2.0 });
-
-        plotList.Add(new List<double> { 0.0, 0.0, 3.0 });
+        // Display lines.
+        StringBuilder outBuilder = new();
+        foreach (float[] polynomial in plotArray)
+        {
+            outBuilder.Append("Plotting");
+            foreach (float coeff in polynomial)
+                outBuilder.Append($" {coeff}");
+            outBuilder.AppendLine();
+        }
 
         OutputTextBox.Foreground = Brushes.Black;
-        OutputTextBox.Text = $"Plotting {plotList.Count} dummy data"; // Display calculation and result
+        OutputTextBox.Text = outBuilder.ToString();
 
-        plot(plotList);
+        for (int i = 0;i < plotArray.Length; i++)
+            
+
+        // Plot the polynomials.
+        plot(plotArray);
     }
 }
