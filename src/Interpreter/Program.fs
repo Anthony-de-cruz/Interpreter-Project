@@ -152,7 +152,9 @@ let getInputString() : string =
 
 // Parser
 // >> is forward function composition operator: let inline (>>) f g x = g(f x)
-let parser tList =
+let parseExpr
+    (tList: terminal list)
+    (symbolTable: Map<string, number>) =
     let rec E tList = (T >> Eopt) tList         // >> is forward function composition operator: let inline (>>) f g x = g(f x)
     and Eopt tList = 
         match tList with
@@ -178,7 +180,10 @@ let parser tList =
             tail'
         | _ -> NM tList
     and NM tList =
-        match tList with 
+        match tList with
+        | Sym name :: tail ->
+            if name |> symbolTable.ContainsKey then tail
+            else $"Bad token: undefined symbol \"{name}\"" |> ParseError |> raise
         | Num _ :: tail -> tail
         | Lpar :: tail -> match E tail with 
                           | Rpar :: tail -> tail
@@ -186,6 +191,56 @@ let parser tList =
         | _ ->  "Bad token: Missing Operand" |> ParseError |> raise 
     E tList
     
+let parseStat
+    (tList: terminal list) 
+    (symbolTable: Map<string, number>) 
+    : terminal list * Map<string, number> * number list list =
+    let rec STA tList symbolTable plotTable =
+        match tList with
+        | [] -> (tList, symbolTable, plotTable)
+        | Sym "let" :: _ -> ASN tList symbolTable plotTable
+        | Sym "plot" :: _ -> PLT tList symbolTable plotTable
+        | Sym "print" :: _ -> PRT tList symbolTable plotTable
+        //| _ -> (tList, symbolTable, plotTable)
+        | _ -> "BRUH" |> ParseError |> raise
+    
+    and ASN tList symbolTable plotTable =
+        match tList with
+        | Sym "let" :: Sym name :: Eql :: tail ->
+            let tail' = parseExpr tail symbolTable
+            match tail' with
+            | Semi :: tail'' ->
+                let symbolTable' = Map.add name (Flt 0) symbolTable
+                STA tail'' symbolTable' plotTable
+            | _ -> "Expected ';' after assignment" |> ParseError |> raise
+        | _ -> "Expected symbol and '=' after 'let'" |> ParseError |> raise
+    
+    and PLT tList symbolTable plotTable =
+        match tList with
+        | Sym "plot" :: tail ->
+            let tail' = parseExpr tail symbolTable
+            PLTopt tail' symbolTable plotTable [Flt 0]
+        | _ -> "Expected 'plot' statement" |> ParseError |> raise
+    
+    and PLTopt tList symbolTable plotTable polynomial =
+        match tList with
+        | Cma :: tail ->
+            let tail' = parseExpr tail symbolTable
+            PLTopt tail' symbolTable plotTable (polynomial @ [Flt 0])
+        | Semi :: tail ->
+            STA tail symbolTable (plotTable @ [polynomial])
+        | _ -> "Expected ',' or ';' in plot statement" |> ParseError |> raise
+    
+    and PRT tList symbolTable plotTable =
+        match tList with
+        | Sym "print" :: tail ->
+            let tail' = parseExpr tail symbolTable
+            match tail' with
+            | Semi :: tail'' -> STA tail'' symbolTable plotTable
+            | _ -> "Expected ';' after print statement" |> ParseError |> raise
+        | _ -> "Expected 'print' statement" |> ParseError |> raise
+    
+    STA tList symbolTable []
 
 /// <summary>
 /// Typecast any IN values to FL values if either is a FL for binops.
@@ -202,7 +257,7 @@ let promoteNum (lhs, rhs) =
     
 
 // Parser and evaluator combined into one
-let parseNeval
+let parseNevalExpr
     (tList: terminal list)
     (symbolTable: Map<string, number>)
     : terminal list * number = 
@@ -262,7 +317,9 @@ let parseNeval
     and NM tList = // Superset of IN, FL, CX
         match tList with 
         | Num value :: tail -> (tail, value)
-        | Sym name :: tail -> (tail, symbolTable[name])
+        | Sym name :: tail ->
+            if name |> symbolTable.ContainsKey then (tail, symbolTable[name])
+            else $"Bad token: undefined symbol \"{name}\"" |> ParseError |> raise
         | Lpar :: tail -> let tList', tVal = E tail
                           match tList' with 
                           | Rpar :: tail -> (tail, tVal)
@@ -271,7 +328,7 @@ let parseNeval
     E tList
 
 
-let parseNexec 
+let parseNevalStat
     (tList: terminal list) 
     (symbolTable: Map<string, number>) 
     : terminal list * Map<string, number> * number list list =
@@ -286,7 +343,7 @@ let parseNexec
     and ASN tList symbolTable plotTable =
         match tList with
         | Sym "let" :: Sym name :: Eql :: tail ->
-            let tail', value = parseNeval tail symbolTable
+            let tail', value = parseNevalExpr tail symbolTable
             match tail' with
             | Semi :: tail'' ->
                 let symbolTable' = Map.add name value symbolTable
@@ -297,14 +354,14 @@ let parseNexec
     and PLT tList symbolTable plotTable =
         match tList with
         | Sym "plot" :: tail ->
-            let tail', value = parseNeval tail symbolTable
+            let tail', value = parseNevalExpr tail symbolTable
             PLTopt tail' symbolTable plotTable [value]
         | _ -> "Expected 'plot' statement" |> ParseError |> raise
     
     and PLTopt tList symbolTable plotTable polynomial =
         match tList with
         | Cma :: tail ->
-            let tail', value = parseNeval tail symbolTable
+            let tail', value = parseNevalExpr tail symbolTable
             PLTopt tail' symbolTable plotTable (polynomial @ [value])
         | Semi :: tail ->
             STA tail symbolTable (plotTable @ [polynomial])
@@ -313,11 +370,11 @@ let parseNexec
     and PRT tList symbolTable plotTable =
         match tList with
         | Sym "print" :: tail ->
-            let tail', value = parseNeval tail symbolTable
+            let tail', value = parseNevalExpr tail symbolTable
             match tail' with
             | Semi :: tail'' ->
                 let timeStr = DateTime.Now.ToString("hh:mm:ss")
-                Console.WriteLine($"{timeStr}| {value}")
+                Console.WriteLine($"{timeStr} | {value}")
                 STA tail'' symbolTable plotTable
             | _ -> "Expected ';' after print statement" |> ParseError |> raise
         | _ -> "Expected 'print' statement" |> ParseError |> raise
@@ -325,8 +382,8 @@ let parseNexec
     STA tList symbolTable []
 
 /// Wrapper function for parseNexec to help C# interop.
-let parseNexecCSharp tList symbolTable =
-    let _, symbolTable', plotTable = parseNexec tList symbolTable
+let parseNevalStatCSharp tList symbolTable =
+    let _, symbolTable', plotTable = parseNevalStat tList symbolTable
     (symbolTable', plotTable |> List.map List.toArray |> List.toArray)
  
  // Prints token list
@@ -343,9 +400,11 @@ let main _  =
     Console.WriteLine("Simple Interpreter")
     let input:string = getInputString()
     let oList = lexer input
+    let testSymbolTable: Map<string, number> = Map.empty
+    let _ = parseStat oList testSymbolTable
     let _ = printTList oList
     let symbolTable: Map<string, number> = Map.empty
-    let _, symbolTable', plotTable = parseNexec oList symbolTable 
+    let _, symbolTable', plotTable = parseNevalStat oList symbolTable 
     Console.WriteLine($"Symbol Table: {symbolTable'}")
     Console.WriteLine($"Plot Table: {plotTable}")
     //let Out = parseNeval oList
