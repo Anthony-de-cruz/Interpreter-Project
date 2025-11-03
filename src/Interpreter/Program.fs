@@ -324,6 +324,10 @@ let parseNexec
     
     STA tList symbolTable []
 
+/// Wrapper function for parseNexec to help C# interop.
+let parseNexecCSharp tList symbolTable =
+    let tList', symbolTable', plotTable = parseNexec tList symbolTable
+    (tList', symbolTable', plotTable |> List.map List.toArray |> List.toArray)
  
  // Prints token list
 let rec printTList (lst:list<terminal>) : list<string> = 
