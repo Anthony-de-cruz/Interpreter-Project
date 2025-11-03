@@ -1,6 +1,7 @@
 ﻿using Microsoft.FSharp.Collections;
 using OxyPlot;
 using OxyPlot.Axes;
+using OxyPlot.Legends;
 using OxyPlot.Series;
 using OxyPlot.Wpf;
 using System.Text;
@@ -48,54 +49,65 @@ public partial class MainWindow : Window
     /// <summary>
     /// Handles plotting
     /// </summary>
-    private void plot(float[] plotTable)
+    private void plot(float[][] polyCoefficients)
     {
         var model = new PlotModel();
 
-        // Add horizontal lines for each value
-        for (int i = 0; i < plotTable.Length; i++)
+        // Plot range
+        double xMin = -10.0;
+        double xMax = 10.0;
+        double deltaX = 0.1; // the step
+
+        model.Axes.Add(new LinearAxis
         {
-            float yValue = plotTable[i];
-            var lineSeries = new LineSeries
+            Position = AxisPosition.Bottom,
+            Minimum = xMin,
+            Maximum = xMax,
+            Title = "X",
+            AxislineStyle = LineStyle.Solid,
+            AxislineThickness = 2,
+            MajorGridlineStyle = LineStyle.Solid,
+            MinorGridlineStyle = LineStyle.Dot,
+            MajorGridlineColor = OxyColor.FromRgb(200, 200, 200),
+            MinorGridlineColor = OxyColor.FromRgb(230, 230, 230)
+        });
+
+        model.Axes.Add(new LinearAxis
+        {
+            Position = AxisPosition.Left,
+            Title = "Y",
+            Minimum = xMin,
+            Maximum = xMax,
+            AxislineStyle = LineStyle.Solid,
+            AxislineThickness = 2,
+            MajorGridlineStyle = LineStyle.Solid,
+            MinorGridlineStyle = LineStyle.Dot,
+            MajorGridlineColor = OxyColor.FromRgb(200, 200, 200),
+            MinorGridlineColor = OxyColor.FromRgb(230, 230, 230)
+        });
+
+        foreach (var coeffs in polyCoefficients)
+        {
+            var lineSeries = new LineSeries();
+            
+            for(double currentX = xMin; currentX <= xMax; currentX += deltaX)
             {
-                Title = $"y = {yValue}"
-            };
+                double yVal = 0.0;
 
-            // Add X-axis (centered at 0)
-            model.Axes.Add(new LinearAxis
-            {
-                Position = AxisPosition.Bottom,
-                Minimum = -100,
-                Maximum = 100,
-                Title = "X",
-                AxislineStyle = LineStyle.Solid,
-                AxislineThickness = 2,
-                MajorGridlineStyle = LineStyle.Solid,
-                MinorGridlineStyle = LineStyle.Dot,
-                MajorGridlineColor = OxyColor.FromRgb(200, 200, 200),
-                MinorGridlineColor = OxyColor.FromRgb(230, 230, 230)
-            });
+                // calculate y = a[0] + b[1]*x + c[2] * x^2 + ....
+                for (int i = 0; i < coeffs.Length; i++)
+                {
 
-            // Add Y-axis (centered at 0)
-            model.Axes.Add(new LinearAxis
-            {
-                Position = AxisPosition.Left,
-                Minimum = -100,
-                Maximum = 100,
-                Title = "Y",
-                AxislineStyle = LineStyle.Solid,
-                AxislineThickness = 2,
-                MajorGridlineStyle = LineStyle.Solid,
-                MinorGridlineStyle = LineStyle.Dot,
-                MajorGridlineColor = OxyColor.FromRgb(200, 200, 200),
-                MinorGridlineColor = OxyColor.FromRgb(230, 230, 230)
-            });
+                    yVal += coeffs[i] * Math.Pow(currentX, i);
+                }
 
-            lineSeries.Points.Add(new DataPoint(-100, yValue));
-            lineSeries.Points.Add(new DataPoint(100, yValue));
+                lineSeries.Points.Add(new DataPoint(currentX, yVal));
+            }
 
+            // Add entire line (all the points)
             model.Series.Add(lineSeries);
         }
+        
 
         PlotView.Model = model;
     }
@@ -107,14 +119,13 @@ public partial class MainWindow : Window
     /// <param name="e"></param>
     private void ExprButton_Click(object sender, RoutedEventArgs e)
     {
-        FSharpList<Interpreter.terminal> lexed;
-        FSharpList<Interpreter.number> plotTable;
+        Interpreter.number[][] fsPlots;
         try
         {
-            lexed = Interpreter.lexer(ExprTextBox.Text);
+            FSharpList<Interpreter.terminal>  lexed = Interpreter.lexer(ExprTextBox.Text);
             //Interpreter.parser(lexed);
-            (_, plotTable) = Interpreter.parseNexec(
-                lexed, MapModule.Empty<string, Interpreter.number>());
+            var result = Interpreter.parseNexecCSharp(lexed, MapModule.Empty<string, Interpreter.number>());
+            fsPlots = result.Item2;
         }
         // Todo - Add new exception types to Interpreter to give better feedback.
         catch (Exception ex)
@@ -124,22 +135,37 @@ public partial class MainWindow : Window
             return;
         }
 
-        StringBuilder terminalListBuilder = new StringBuilder();
-        foreach (Interpreter.terminal i in lexed)
-            terminalListBuilder.Append($"{i} ");
-
-        float[] plotArray = new float[plotTable.Length];
-        for (int i = 0; i < plotTable.Length; i++)
+        // Convert F# array to C# array.
+        float[][] plotArray = new float[fsPlots.Length][];
+        for (int i = 0; i < fsPlots.Length; i++)
         {
-            if (plotTable[i].IsInt)
-                plotArray[i] = ((Interpreter.number.Int)plotTable[i]).Item;
-            else if (plotTable[i].IsFlt)
-                plotArray[i] = (float)((Interpreter.number.Flt)plotTable[i]).Item;
+            plotArray[i] = new float[fsPlots[i].Length];
+            for (int j = 0; j < fsPlots[i].Length; j++)
+            {
+                if (fsPlots[i][j].IsInt)
+                    plotArray[i][j] = ((Interpreter.number.Int)fsPlots[i][j]).Item;
+                else if (fsPlots[i][j].IsFlt)
+                    plotArray[i][j] = (float)((Interpreter.number.Flt)fsPlots[i][j]).Item;
+            }
+        }
+
+        // Display lines.
+        StringBuilder outBuilder = new();
+        foreach (float[] polynomial in plotArray)
+        {
+            outBuilder.Append("Plotting");
+            foreach (float coeff in polynomial)
+                outBuilder.Append($" {coeff}");
+            outBuilder.AppendLine();
         }
 
         OutputTextBox.Foreground = Brushes.Black;
-        //OutputTextBox.Text = $"{terminalListBuilder}= {result}"; // Display calculation and result
+        OutputTextBox.Text = outBuilder.ToString();
 
+        for (int i = 0;i < plotArray.Length; i++)
+            
+
+        // Plot the polynomials.
         plot(plotArray);
     }
 }
