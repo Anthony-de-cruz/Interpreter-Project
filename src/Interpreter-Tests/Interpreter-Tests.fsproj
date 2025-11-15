@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+		<OutputType>Library</OutputType>
         <TargetFramework>net9.0</TargetFramework>
         <RootNamespace>Interpreter_Tests</RootNamespace>
         <IsPackable>false</IsPackable>
-        <GenerateProgramFile>false</GenerateProgramFile>
     </PropertyGroup>
 
     <ItemGroup>
