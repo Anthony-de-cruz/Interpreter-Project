@@ -16,8 +16,8 @@ let ``Addition Valid`` () =
     ]
     |> List.iter (fun (testCase, expectedResult) ->
         let lexed = lexer testCase
-        parser lexed |> ignore
-        Assert.Equal<number>(expectedResult, parseNeval lexed Map.empty |> snd)
+        parseExpr lexed |> ignore
+        Assert.Equal<number>(expectedResult, parseNevalExpr lexed Map.empty |> snd)
     )
 
 [<Fact>]
@@ -31,9 +31,9 @@ let ``Addition Invalid`` () =
     |> List.iter (fun testCase ->
         fun () ->
             lexer testCase
-            |> parser
+            |> parseExpr <| Map.empty
             |> ignore
-        |> Assert.Throws<ParseError>
+        |> Assert.Throws<SyntaxError>
         |> ignore
     )
 
@@ -47,8 +47,8 @@ let ``Multiplication Valid`` () =
     ]
     |> List.iter (fun (testCase, expectedResult) ->
         let lexed = lexer testCase
-        parser lexed |> ignore
-        Assert.Equal<number>(expectedResult, parseNeval lexed Map.empty |> snd)
+        parseExpr lexed |> ignore
+        Assert.Equal<number>(expectedResult, parseNevalExpr lexed Map.empty |> snd)
     )
     
 [<Fact>]
@@ -62,9 +62,9 @@ let ``Multiplication Invalid`` () =
     |> List.iter (fun testCase ->
         fun () ->
             lexer testCase
-            |> parser
+            |> parseExpr <| Map.empty
             |> ignore
-        |> Assert.Throws<ParseError>
+        |> Assert.Throws<SyntaxError>
         |> ignore
     )
 
@@ -79,8 +79,8 @@ let ``Division Valid`` () =
     ]
     |> List.iter (fun (testCase, expectedResult) ->
         let lexed = lexer testCase
-        parser lexed |> ignore
-        Assert.Equal<number>(expectedResult, parseNeval lexed Map.empty |> snd)
+        parseExpr lexed |> ignore
+        Assert.Equal<number>(expectedResult, parseNevalExpr lexed Map.empty |> snd)
     )
 
 [<Fact>]
@@ -94,9 +94,9 @@ let ``Division Invalid`` () =
     |> List.iter (fun testCase ->
         fun () ->
             lexer testCase
-            |> parser
+            |> parseExpr <| Map.empty
             |> ignore
-        |> Assert.Throws<ParseError>
+        |> Assert.Throws<SyntaxError>
         |> ignore
     )
 
@@ -107,7 +107,7 @@ let ``Division Invalid`` () =
     |> List.iter (fun testCase ->
         fun () ->
             lexer testCase
-            |> (fun lexed -> parseNeval lexed Map.empty)
+            |> (fun lexed -> parseNevalExpr lexed Map.empty)
             |> ignore
         |> Assert.Throws<System.DivideByZeroException>
         |> ignore
@@ -124,8 +124,8 @@ let ``Modulus Valid`` () =
     ]
     |> List.iter (fun (testCase, expectedResult) ->
         let lexed = lexer testCase
-        parser lexed |> ignore
-        Assert.Equal<number>(expectedResult, parseNeval lexed Map.empty |> snd)
+        parseExpr lexed |> ignore
+        Assert.Equal<number>(expectedResult, parseNevalExpr lexed Map.empty |> snd)
     )
 
 [<Fact>]
@@ -139,9 +139,9 @@ let ``Modulus Invalid`` () =
     |> List.iter (fun testCase ->
         fun () ->
             lexer testCase
-            |> parser
+            |> parseExpr <| Map.empty
             |> ignore
-        |> Assert.Throws<ParseError>
+        |> Assert.Throws<SyntaxError>
         |> ignore
     )
     
@@ -152,7 +152,7 @@ let ``Modulus Invalid`` () =
     |> List.iter (fun testCase ->
         fun () ->
             lexer testCase
-            |> (fun lexed -> parseNeval lexed Map.empty)
+            |> (fun lexed -> parseNevalExpr lexed Map.empty)
             |> ignore
         |> Assert.Throws<System.DivideByZeroException>
         |> ignore
@@ -167,8 +167,8 @@ let ``Power Valid`` () =
     ]
     |> List.iter (fun (testCase, expectedResult) ->
         let lexed = lexer testCase
-        parser lexed |> ignore
-        Assert.Equal<number>(expectedResult, parseNeval lexed Map.empty |> snd)
+        parseExpr lexed |> ignore
+        Assert.Equal<number>(expectedResult, parseNevalExpr lexed Map.empty |> snd)
     )
     
 [<Fact>]
@@ -182,9 +182,9 @@ let ``Power Invalid`` () =
     |> List.iter (fun testCase ->
         fun () ->
             lexer testCase
-            |> parser
+            |> parseExpr <| Map.empty
             |> ignore
-        |> Assert.Throws<ParseError>
+        |> Assert.Throws<SyntaxError>
         |> ignore
     )
     
@@ -200,8 +200,8 @@ let ``Unary Valid`` () =
     ]
     |> List.iter (fun (testCase, expectedResult) ->
         let lexed = lexer testCase
-        parser lexed |> ignore
-        Assert.Equal<number>(expectedResult, parseNeval lexed Map.empty |> snd)
+        parseExpr lexed |> ignore
+        Assert.Equal<number>(expectedResult, parseNevalExpr lexed Map.empty |> snd)
     )
     
 [<Fact>]
@@ -215,8 +215,8 @@ let ``Unary Invalid`` () =
     |> List.iter (fun testCase ->
         fun () ->
             lexer testCase
-            |> parser
+            |> parseExpr <| Map.empty
             |> ignore
-        |> Assert.Throws<ParseError>
+        |> Assert.Throws<SyntaxError>
         |> ignore
     )

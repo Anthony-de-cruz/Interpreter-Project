@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:oxy="http://oxyplot.org/wpf"
         mc:Ignorable="d"
-        Title="Interpreter" Height="450" Width="800">
+        Title="Interpreter" Height="675" Width="1200">
     <DockPanel>
         <!-- Top Menu -->
         <Menu DockPanel.Dock="Top" Background="White">
@@ -13,47 +13,84 @@
                 <MenuItem x:Name="HelpTutorialButton" Header="Tutorial" Click="HelpTutorialButton_Click" />
             </MenuItem>
         </Menu>
-        <Grid Margin="0,0,0,10">
+        <Grid Margin="10">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
+                <RowDefinition Height="2*" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
             <!-- Input Group -->
-            <GroupBox Header="Enter Your Expression" Grid.Row="0" Margin="10,10,10,0">
-                <Grid>
+            <GroupBox Header="Code" Grid.Row="0" Grid.Column="0" Margin="0,0,5,5">
+                <DockPanel Margin="5">
+                    <DockPanel DockPanel.Dock="Bottom" 
+                   Margin="0,5,0,0">
+                        <Button x:Name="RunButton" 
+                            DockPanel.Dock="Right"
+                            Content="Run" 
+                            Width="80"
+                            Height="26"
+                            Click="RunButton_Click" 
+                            IsEnabled="False" />
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="OpenButton" 
+                        Content="Open" 
+                        Width="80"
+                        Height="26"
+                        Margin="0,0,5,0"
+                        Click="OpenButton_Click"
+                        IsEnabled="False" />
+                            <Button x:Name="SaveButton" 
+                        Content="Save" 
+                        Width="80"
+                        Height="26"
+                        Click="SaveButton_Click"
+                        IsEnabled="False" />
+                        </StackPanel>
+                    </DockPanel>
+                    <TextBox x:Name="ExprTextBox" 
+                         Text=""
+                         TextChanged="ExprTextBox_TextChanged" 
+                         AcceptsReturn="True" 
+                         AcceptsTab="True"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto" FontSize="16" FontFamily="Cascadia Code Light" />
+                </DockPanel>
+            </GroupBox>
+
+            <!-- Output + Plot Table -->
+            <GroupBox Header="Output / Plot Table" Grid.Row="1" Grid.Column="0" Margin="0,0,5,0">
+                <Grid Margin="5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="ExprTextBox" Grid.Column="0" Text="" Height="24"
-                             Margin="10,0,5,0" TextChanged="ExprTextBox_TextChanged" />
-                    <Button x:Name="CalculateButton" Grid.Column="1" Content="Calculate" HorizontalAlignment="Center"
-                            Margin="5,10,10,10"
-                            VerticalAlignment="Top" RenderTransformOrigin="0.463,0.13" Width="63"
-                            Click="ExprButton_Click" HorizontalContentAlignment="Center"
-                            VerticalContentAlignment="Center" IsEnabled="False" Height="24" />
-                </Grid>
-            </GroupBox>
-            <!-- Output + Plot Together -->
-            <GroupBox Header="Output and Plot" Grid.Row="1" Margin="10,0,10,0">
-                <Grid Margin="10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*" />
-                        <!-- Output Text -->
-                        <ColumnDefinition Width="3*" />
-                        <!-- Plot -->
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- Output Text -->
                     <TextBox x:Name="OutputTextBox"
-                 Margin="0,0,10,0"
-                 Text=""
-                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                 ScrollViewer.VerticalScrollBarVisibility="Auto"
-                 IsReadOnly="True" />
-                    <!-- Plot -->
-                    <oxy:PlotView x:Name="PlotView" Grid.Column="1" />
+                             Grid.Column="0"
+                             Margin="0,0,2.5,0"
+                             Text=""
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             IsReadOnly="True" FontSize="16" FontFamily="Cascadia Code Light" />
+
+                    <!-- Plot Table -->
+                    <TextBox x:Name="PlottingTextBox"
+                             Grid.Column="1"
+                             Margin="2.5,0,0,0"
+                             Text=""
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             IsReadOnly="True" FontSize="16" FontFamily="Cascadia Code Light" />
                 </Grid>
+            </GroupBox>
+
+            <!-- Plot View -->
+            <GroupBox Header="Plot" Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" Margin="0">
+                <oxy:PlotView x:Name="PlotView" Margin="5"/>
             </GroupBox>
         </Grid>
     </DockPanel>
