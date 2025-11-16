@@ -210,7 +210,7 @@ let parseExpr
     E tList
 
 
-// Parse statement tokens.
+/// Parse statement tokens.
 let parseStat
     (tList: terminal list) 
     (symbolTable: Map<string, number>) 
@@ -221,8 +221,9 @@ let parseStat
         | Sym s :: tail when s = assignSymbol -> ASN tail symbolTable
         | Sym s :: tail when s = plotSymbol -> PLT tail symbolTable
         | Sym s :: tail when s = printSymbol -> PRT tail symbolTable
-        | Sym s :: _ -> $"Undefined statement '{s}'" |> SyntaxError |> raise
-        | _ :: _ -> $"Bad token: Expecting statement symbol" |> SyntaxError |> raise
+        //| Sym s :: _ -> $"Undefined statement '{s}'" |> SyntaxError |> raise
+        //| _ :: _ -> $"Bad token: Expecting statement symbol" |> SyntaxError |> raise
+        | _ :: _ -> PRT tList symbolTable // Print top level expressions.
     
     and ASN tList symbolTable =
         match tList with
@@ -260,35 +261,30 @@ let parseStat
     STA tList symbolTable
 
 
-/// <summary>
 /// Typecast any IN values to FL values if either is a FL for binops.
-/// </summary>
-/// <param name="lhs">The first number.</param>
-/// <param name="rhs">The second number.</param>
-/// <returns>(Typecasted lhs * Typecasted rhs)</returns>
-let promoteNum (lhs, rhs) =
+let promoteNum lhs rhs : number * number =
     match lhs, rhs with
-    | Int lhs, Int rhs -> (Int lhs, Int rhs)
-    | Int lhs, Flt rhs -> (Flt (float lhs), Flt rhs)
-    | Flt lhs, Int rhs -> (Flt lhs, Flt (float rhs))
-    | Flt lhs, Flt rhs -> (Flt lhs, Flt rhs)
+    | Int lhs, Int rhs -> Int lhs, Int rhs
+    | Int lhs, Flt rhs -> Flt (float lhs), Flt rhs
+    | Flt lhs, Int rhs -> Flt lhs, Flt (float rhs)
+    | Flt lhs, Flt rhs -> Flt lhs, Flt rhs
 
 
-// Parse and evaluate expressions.
+/// Parse and evaluate expressions.
 let parseNevalExpr
-    (tList: terminal list)
-    (symbolTable: Map<string, number>)
+    (tList: terminal list) // Token list
+    (symbolTable: Map<string, number>) // Symbol table
     : terminal list * number = 
     let rec E tList = (T >> Eopt) tList
     and Eopt (tList, value) = 
         match tList with
         | Add :: tail -> let tList', tVal = T tail
-                         match promoteNum(value, tVal) with
+                         match promoteNum value tVal with
                          | Int value', Int tVal' -> Eopt(tList', Int (value' + tVal'))
                          | Flt value', Flt tVal' -> Eopt(tList', Flt (value' + tVal'))
                          | _ -> "Bad evaluation: Cannot ADD different types" |> RuntimeError |> raise 
         | Sub :: tail -> let tList', tVal = T tail
-                         match promoteNum (value, tVal) with
+                         match promoteNum value tVal with
                          | Int value', Int tVal' -> Eopt(tList', Int (value' - tVal'))
                          | Flt value', Flt tVal' -> Eopt(tList', Flt (value' - tVal'))
                          | _ -> "Bad evaluation: Cannot SUB different types" |> RuntimeError |> raise
@@ -297,12 +293,12 @@ let parseNevalExpr
     and Topt (tList, value) =
         match tList with
         | Mul :: tail -> let tList', tVal = P tail
-                         match promoteNum(value, tVal) with
+                         match promoteNum value tVal with
                          | Int value', Int tVal' -> Topt(tList', Int (value' * tVal'))
                          | Flt value', Flt tVal' -> Topt(tList', Flt (value' * tVal'))
                          | _ -> "Bad evaluation: Cannot MUL different types" |> RuntimeError |> raise 
         | Div :: tail -> let tList', tVal = P tail
-                         match promoteNum (value, tVal) with
+                         match promoteNum value tVal with
                          // F# evaluates floating point division by 0 as infinity, so we must manually catch this.
                          | Int _, Int 0 | Flt _, Flt 0.0 -> "Attempted to divide by zero" |> DivideByZeroException |> raise 
                          | Int value', Int tVal' -> Topt(tList', Flt ((float value') / (float tVal'))) // Force a promotion.
@@ -310,7 +306,7 @@ let parseNevalExpr
                          | _ -> "Bad evaluation: Cannot DIV different types" |> RuntimeError |> raise 
         | Mod :: tail -> let tList', tVal = P tail
                          // F# evaluates floating point division by 0 as infinity, so we must manually catch this.
-                         match promoteNum (value, tVal) with
+                         match promoteNum value tVal with
                          | Int _, Int 0 | Flt _, Flt 0.0 -> "Attempted to divide by zero" |> DivideByZeroException |> raise 
                          | Int value', Int tVal' -> Topt(tList', Int (value' % tVal'))
                          | Flt value', Flt tVal' -> Topt(tList', Flt (value' % tVal'))
@@ -320,7 +316,7 @@ let parseNevalExpr
     and Popt (tList, value) =
         match tList with
         | Pwr :: tail -> let tList', tVal = U tail
-                         match promoteNum(value, tVal) with
+                         match promoteNum value tVal with
                          | Int value', Int tVal' -> Popt(tList', Int (pown value' tVal'))
                          | Flt value', Flt tVal' -> Popt(tList', Flt (value' ** tVal'))
                          | _ -> "Bad evaluation: Cannot POW different types" |> RuntimeError |> raise 
@@ -346,7 +342,7 @@ let parseNevalExpr
     E tList
 
 
-// Parse and evaluate statements.
+/// Parse and evaluate statements.
 let parseNevalStat
     (tList: terminal list) 
     (symbolTable: Map<string, number>) 
@@ -358,9 +354,9 @@ let parseNevalStat
         | Sym s :: tail when s = assignSymbol -> ASN tail symbolTable plotTable
         | Sym s :: tail when s = plotSymbol -> PLT tail symbolTable plotTable
         | Sym s :: tail when s = printSymbol -> PRT tail symbolTable plotTable
-        | Sym s :: _ -> $"Undefined statement '{s}'" |> SyntaxError |> raise
-        | _ :: _ -> PRT tList symbolTable plotTable
-            //$"Bad token: Expecting statement symbol" |> SyntaxError |> raise
+        //| Sym s :: _ -> $"Undefined statement '{s}'" |> SyntaxError |> raise
+        //| _ :: _ -> $"Bad token: Expecting statement symbol" |> SyntaxError |> raise
+        | _ :: _ -> PRT tList symbolTable plotTable // Print top level expressions.
     
     and ASN tList symbolTable plotTable =
         match tList with
@@ -409,7 +405,7 @@ let parseNevalStatCSharp
     (symbolTable', plotTable |> List.map List.toArray |> List.toArray)
  
 
- // Prints token list
+/// Prints token list
 let rec printTList (lst:list<terminal>) : list<string> = 
     match lst with
     head::tail -> Console.Write("{0} ",head.ToString())
