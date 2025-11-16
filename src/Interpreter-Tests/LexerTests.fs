@@ -24,7 +24,7 @@ let ``Basic Symbol Lexing Invalid`` () =
         fun () ->
             lexer testCase
             |> ignore
-        |> Assert.Throws<LexError>
+        |> Assert.Throws<SyntaxError>
         |> ignore
     )
 
@@ -53,7 +53,7 @@ let ``Basic Floating Point Lexing Invalid`` () =
         fun () ->
             lexer testCase
             |> ignore
-        |> Assert.Throws<LexError>
+        |> Assert.Throws<SyntaxError>
         |> ignore
     )
     

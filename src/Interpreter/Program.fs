@@ -8,6 +8,13 @@ module Interpreter
 
 open System
 
+// Reserved symbols
+// Todo - Consider adding a keyword type to the terminal union.
+let assignSymbol = "let"
+let printSymbol = "print"
+let plotSymbol = "plot"
+let reservedSymbols = Set.ofList [ assignSymbol; printSymbol; plotSymbol ]
+
 // Superset of CX, FT, IN
 type number =  Int of int | Flt of float
 
@@ -22,53 +29,63 @@ let isDigit c = Char.IsDigit c
 let isAlpha c = Char.IsLetter c
 let intVal (c:char) = int (int c - int '0')
 
-exception LexError of string
-exception ParseError of string
+exception SyntaxError of string
+exception RuntimeError of string
 
 // Scans digits to form an int, keeping track of lexer position
 let rec scInt(iStr, iVal, pos) = 
     match iStr with
-    c :: tail when isDigit c -> scInt(tail, 10*iVal+(intVal c), pos + 1)
+    | c :: tail when isDigit c -> scInt(tail, 10*iVal+(intVal c), pos + 1)
     | _ -> (iStr, iVal, pos)
 
 // Scans digits and decimal points to form numbers, keeping track of lexer position
 let scNum(iStr, iVal, startingPos) =
     let iStr, whole, wholePos = scInt(iStr, iVal, startingPos)
     match iStr with
-    '.'::c::tail when isDigit c -> 
+    | '.'::c::tail when isDigit c -> 
         let rest, fractional, fractionalPos = scInt(tail, intVal c, wholePos + 2)
         // Find the positional difference between '.' and our fractional scan.
         let fractional = (float fractional / 10.0 ** (float fractionalPos - (float wholePos + 1.0)))
         (rest, Flt (float whole + fractional), fractionalPos)
-    | '.' :: _ -> $"Missing fractional digit @ position {wholePos}" |> LexError |> raise
+    | '.' :: _ -> $"Missing fractional digit @ position {wholePos}" |> SyntaxError |> raise
     | _ -> (iStr, Int whole, wholePos)
-    
+
+// Scan for a string of alphabet chars.
 let rec scAlpha(iStr: char list, iSymbol: string, pos: int) =
     match iStr with
     | c :: tail when isAlpha c -> scAlpha(tail, iSymbol + string c, pos + 1)
     | _ -> (iStr, iSymbol, pos)
 
+// Throw away chars until newline.
+let rec scComment(iStr: char list) =
+    match iStr with
+    | [] -> []
+    | '\n'::tail -> tail
+    | _ ::tail -> scComment(tail)
+
 let lexer input =
     let rec scan input line pos =
         match input with
         | [] -> []
-        | '+'::tail -> Add :: scan tail line (pos + 1)
-        | '^'::tail -> Pwr :: scan tail line (pos + 1)
-        | '-'::tail -> Sub :: scan tail line (pos + 1)
-        | '*'::tail -> Mul :: scan tail line (pos + 1)
-        | '/'::tail -> Div :: scan tail line (pos + 1)
-        | '%'::tail -> Mod :: scan tail line (pos + 1)
-        | '='::tail -> Eql :: scan tail line (pos + 1)
-        | '('::tail -> Lpar:: scan tail line (pos + 1)
-        | ')'::tail -> Rpar:: scan tail line (pos + 1)
-        | ','::tail -> Cma :: scan tail line (pos + 1)
-        | ';'::tail -> Semi:: scan tail (line + 1) 0
+        | '+'::tail -> Add  :: scan tail line (pos + 1)
+        | '^'::tail -> Pwr  :: scan tail line (pos + 1)
+        | '-'::tail -> Sub  :: scan tail line (pos + 1)
+        | '*'::tail -> Mul  :: scan tail line (pos + 1)
+        | '/'::tail -> Div  :: scan tail line (pos + 1)
+        | '%'::tail -> Mod  :: scan tail line (pos + 1)
+        | '='::tail -> Eql  :: scan tail line (pos + 1)
+        | '('::tail -> Lpar :: scan tail line (pos + 1)
+        | ')'::tail -> Rpar :: scan tail line (pos + 1)
+        | ','::tail -> Cma  :: scan tail line (pos + 1)
+        | ';'::tail -> Semi :: scan tail (line + 1) 0
+        | '#'::tail -> let tail' = scComment(tail)
+                       scan tail' line pos
         | c :: tail when isBlank c -> scan tail line (pos + 1)
         | c :: tail when isDigit c -> let iStr, iVal, pos = scNum(tail, intVal c, pos + 1)
                                       Num iVal :: scan iStr line (pos + 1)
         | c :: tail when isAlpha c -> let iStr, iSymbol, pos = scAlpha(tail, string c, pos + 1)
                                       Sym iSymbol :: scan iStr line (pos + 1)
-        | c :: _ ->  $"Bad character: {c} @ {line}{pos}" |> LexError |> raise 
+        | c :: _ ->  $"Bad character: {c} @ {line}{pos}" |> SyntaxError |> raise 
     scan (str2lst input) 0 0
 
 let getInputString() : string = 
@@ -150,10 +167,14 @@ let getInputString() : string =
 // FL     -> Floating Point
 // CX     -> Complex Number
 
-// Parser
-// >> is forward function composition operator: let inline (>>) f g x = g(f x)
-let parser tList =
-    let rec E tList = (T >> Eopt) tList         // >> is forward function composition operator: let inline (>>) f g x = g(f x)
+
+/// Parse expression tokens.
+let parseExpr
+    (tList: terminal list)
+    (symbolTable: Map<string, number>)
+    : terminal list =
+    // >> is forward function composition operator: let inline (>>) f g x = g(f x)
+    let rec E tList = (T >> Eopt) tList         
     and Eopt tList = 
         match tList with
         | Add :: tail -> (T >> Eopt) tail
@@ -178,79 +199,128 @@ let parser tList =
             tail'
         | _ -> NM tList
     and NM tList =
-        match tList with 
+        match tList with
+        | Sym name :: tail ->
+            if name |> symbolTable.ContainsKey then tail
+            else $"Bad token: undefined symbol \"{name}\"" |> SyntaxError |> raise
         | Num _ :: tail -> tail
         | Lpar :: tail -> match E tail with 
                           | Rpar :: tail -> tail
-                          | _ ->  "Bad token: Missing Parentheses \")\"" |> ParseError |> raise
-        | _ ->  "Bad token: Missing Operand" |> ParseError |> raise 
+                          | _ ->  "Bad token: Missing Parentheses \")\"" |> SyntaxError |> raise
+        | _ ->  "Bad token: Missing Operand" |> SyntaxError |> raise 
     E tList
-    
 
-/// <summary>
+
+/// Parse statement tokens.
+let parseStat
+    (tList: terminal list) 
+    (symbolTable: Map<string, number>) 
+    : terminal list * Map<string, number> =
+    let rec STA tList symbolTable =
+        match tList with
+        | [] -> (tList, symbolTable)
+        | Sym s :: tail when s = assignSymbol -> ASN tail symbolTable
+        | Sym s :: tail when s = plotSymbol -> PLT tail symbolTable
+        | Sym s :: tail when s = printSymbol -> PRT tail symbolTable
+        //| Sym s :: _ -> $"Undefined statement '{s}'" |> SyntaxError |> raise
+        //| _ :: _ -> $"Bad token: Expecting statement symbol" |> SyntaxError |> raise
+        | _ :: _ -> PRT tList symbolTable // Print top level expressions.
+    
+    and ASN tList symbolTable =
+        match tList with
+        | Sym name :: Eql :: tail ->
+            if Set.contains name reservedSymbols then
+                $"Attempted to define reserved symbol '{name}' as a variable" |> SyntaxError |> raise 
+            let tail' = parseExpr tail symbolTable
+            match tail' with
+            | Semi :: tail'' ->
+                // Set all variables to 0 since they aren't being truely evaluated.
+                let symbolTable' = Map.add name (Flt 0) symbolTable
+                STA tail'' symbolTable'
+            | _ -> "Expected ';' after assignment" |> SyntaxError |> raise
+        | _ -> "Expected symbol and '=' after 'let'" |> SyntaxError |> raise
+    
+    and PLT tList symbolTable =
+        let tail = parseExpr tList symbolTable
+        PLTopt tail symbolTable
+
+    and PLTopt tList symbolTable =
+        match tList with
+        | Cma :: tail ->
+            let tail' = parseExpr tail symbolTable
+            PLTopt tail' symbolTable
+        | Semi :: tail ->
+            STA tail symbolTable
+        | _ -> "Expected ',' or ';' in plot statement" |> SyntaxError |> raise
+    
+    and PRT tList symbolTable =
+        let tail = parseExpr tList symbolTable
+        match tail with
+        | Semi :: tail' -> STA tail' symbolTable
+        | _ -> "Expected ';' after print statement" |> SyntaxError |> raise
+    
+    STA tList symbolTable
+
+
 /// Typecast any IN values to FL values if either is a FL for binops.
-/// </summary>
-/// <param name="lhs">The first number.</param>
-/// <param name="rhs">The second number.</param>
-/// <returns>(Typecasted lhs * Typecasted rhs)</returns>
-let promoteNum (lhs, rhs) =
+let promoteNum lhs rhs : number * number =
     match lhs, rhs with
-    | Int lhs, Int rhs -> (Int lhs, Int rhs)
-    | Int lhs, Flt rhs -> (Flt (float lhs), Flt rhs)
-    | Flt lhs, Int rhs -> (Flt lhs, Flt (float rhs))
-    | Flt lhs, Flt rhs -> (Flt lhs, Flt rhs)
-    
+    | Int lhs, Int rhs -> Int lhs, Int rhs
+    | Int lhs, Flt rhs -> Flt (float lhs), Flt rhs
+    | Flt lhs, Int rhs -> Flt lhs, Flt (float rhs)
+    | Flt lhs, Flt rhs -> Flt lhs, Flt rhs
 
-// Parser and evaluator combined into one
-let parseNeval
-    (tList: terminal list)
-    (symbolTable: Map<string, number>)
+
+/// Parse and evaluate expressions.
+let parseNevalExpr
+    (tList: terminal list) // Token list
+    (symbolTable: Map<string, number>) // Symbol table
     : terminal list * number = 
     let rec E tList = (T >> Eopt) tList
     and Eopt (tList, value) = 
         match tList with
         | Add :: tail -> let tList', tVal = T tail
-                         match promoteNum(value, tVal) with
+                         match promoteNum value tVal with
                          | Int value', Int tVal' -> Eopt(tList', Int (value' + tVal'))
                          | Flt value', Flt tVal' -> Eopt(tList', Flt (value' + tVal'))
-                         | _ -> "Bad evaluation: Cannot ADD different types" |> ParseError |> raise 
+                         | _ -> "Bad evaluation: Cannot ADD different types" |> RuntimeError |> raise 
         | Sub :: tail -> let tList', tVal = T tail
-                         match promoteNum (value, tVal) with
+                         match promoteNum value tVal with
                          | Int value', Int tVal' -> Eopt(tList', Int (value' - tVal'))
                          | Flt value', Flt tVal' -> Eopt(tList', Flt (value' - tVal'))
-                         | _ -> "Bad evaluation: Cannot SUB different types" |> ParseError |> raise
+                         | _ -> "Bad evaluation: Cannot SUB different types" |> RuntimeError |> raise
         | _ -> (tList, value)
     and T tList = (P >> Topt) tList
     and Topt (tList, value) =
         match tList with
         | Mul :: tail -> let tList', tVal = P tail
-                         match promoteNum(value, tVal) with
+                         match promoteNum value tVal with
                          | Int value', Int tVal' -> Topt(tList', Int (value' * tVal'))
                          | Flt value', Flt tVal' -> Topt(tList', Flt (value' * tVal'))
-                         | _ -> "Bad evaluation: Cannot MUL different types" |> ParseError |> raise 
+                         | _ -> "Bad evaluation: Cannot MUL different types" |> RuntimeError |> raise 
         | Div :: tail -> let tList', tVal = P tail
-                         match promoteNum (value, tVal) with
+                         match promoteNum value tVal with
                          // F# evaluates floating point division by 0 as infinity, so we must manually catch this.
                          | Int _, Int 0 | Flt _, Flt 0.0 -> "Attempted to divide by zero" |> DivideByZeroException |> raise 
                          | Int value', Int tVal' -> Topt(tList', Flt ((float value') / (float tVal'))) // Force a promotion.
                          | Flt value', Flt tVal' -> Topt(tList', Flt (value' / tVal'))
-                         | _ -> "Bad evaluation: Cannot DIV different types" |> ParseError |> raise 
+                         | _ -> "Bad evaluation: Cannot DIV different types" |> RuntimeError |> raise 
         | Mod :: tail -> let tList', tVal = P tail
                          // F# evaluates floating point division by 0 as infinity, so we must manually catch this.
-                         match promoteNum (value, tVal) with
+                         match promoteNum value tVal with
                          | Int _, Int 0 | Flt _, Flt 0.0 -> "Attempted to divide by zero" |> DivideByZeroException |> raise 
                          | Int value', Int tVal' -> Topt(tList', Int (value' % tVal'))
                          | Flt value', Flt tVal' -> Topt(tList', Flt (value' % tVal'))
-                         | _ -> "Bad evaluation: Cannot MOD different types" |> ParseError |> raise 
+                         | _ -> "Bad evaluation: Cannot MOD different types" |> RuntimeError |> raise 
         | _ -> (tList, value)
     and P tList = (U >> Popt) tList
     and Popt (tList, value) =
         match tList with
         | Pwr :: tail -> let tList', tVal = U tail
-                         match promoteNum(value, tVal) with
+                         match promoteNum value tVal with
                          | Int value', Int tVal' -> Popt(tList', Int (pown value' tVal'))
                          | Flt value', Flt tVal' -> Popt(tList', Flt (value' ** tVal'))
-                         | _ -> "Bad evaluation: Cannot POW different types" |> ParseError |> raise 
+                         | _ -> "Bad evaluation: Cannot POW different types" |> RuntimeError |> raise 
         | _ -> (tList, value)
     and U tList =
         match tList with
@@ -262,74 +332,81 @@ let parseNeval
     and NM tList = // Superset of IN, FL, CX
         match tList with 
         | Num value :: tail -> (tail, value)
-        | Sym name :: tail -> (tail, symbolTable[name])
+        | Sym name :: tail ->
+            if name |> symbolTable.ContainsKey then (tail, symbolTable[name])
+            else $"Bad token: undefined symbol \"{name}\"" |> RuntimeError |> raise
         | Lpar :: tail -> let tList', tVal = E tail
                           match tList' with 
                           | Rpar :: tail -> (tail, tVal)
-                          | _ -> "Bad token: Missing Parentheses" |> ParseError |> raise
-        | _ -> "Bad token: Missing Operand" |> ParseError |> raise
+                          | _ -> "Bad token: Missing Parentheses" |> SyntaxError |> raise
+        | _ -> "Bad token: Missing Operand" |> SyntaxError |> raise
     E tList
 
 
-let parseNexec 
+/// Parse and evaluate statements.
+let parseNevalStat
     (tList: terminal list) 
     (symbolTable: Map<string, number>) 
+    (stdOut: System.IO.StringWriter)
     : terminal list * Map<string, number> * number list list =
     let rec STA tList symbolTable plotTable =
         match tList with
         | [] -> (tList, symbolTable, plotTable)
-        | Sym "let" :: _ -> ASN tList symbolTable plotTable
-        | Sym "plot" :: _ -> PLT tList symbolTable plotTable
-        | Sym "print" :: _ -> PRT tList symbolTable plotTable
-        | _ -> (tList, symbolTable, plotTable)
+        | Sym s :: tail when s = assignSymbol -> ASN tail symbolTable plotTable
+        | Sym s :: tail when s = plotSymbol -> PLT tail symbolTable plotTable
+        | Sym s :: tail when s = printSymbol -> PRT tail symbolTable plotTable
+        //| Sym s :: _ -> $"Undefined statement '{s}'" |> SyntaxError |> raise
+        //| _ :: _ -> $"Bad token: Expecting statement symbol" |> SyntaxError |> raise
+        | _ :: _ -> PRT tList symbolTable plotTable // Print top level expressions.
     
     and ASN tList symbolTable plotTable =
         match tList with
-        | Sym "let" :: Sym name :: Eql :: tail ->
-            let tail', value = parseNeval tail symbolTable
+        |  Sym name :: Eql :: tail ->
+            let tail', value = parseNevalExpr tail symbolTable
             match tail' with
             | Semi :: tail'' ->
                 let symbolTable' = Map.add name value symbolTable
                 STA tail'' symbolTable' plotTable
-            | _ -> "Expected ';' after assignment" |> ParseError |> raise
-        | _ -> "Expected symbol and '=' after 'let'" |> ParseError |> raise
+            | _ -> "Expected ';' after assignment" |> SyntaxError |> raise
+        | _ -> "Expected symbol and '=' after 'let'" |> SyntaxError |> raise
     
     and PLT tList symbolTable plotTable =
-        match tList with
-        | Sym "plot" :: tail ->
-            let tail', value = parseNeval tail symbolTable
-            PLTopt tail' symbolTable plotTable [value]
-        | _ -> "Expected 'plot' statement" |> ParseError |> raise
+        let tail, value = parseNevalExpr tList symbolTable
+        PLTopt tail symbolTable plotTable [value]
     
     and PLTopt tList symbolTable plotTable polynomial =
         match tList with
         | Cma :: tail ->
-            let tail', value = parseNeval tail symbolTable
+            let tail', value = parseNevalExpr tail symbolTable
             PLTopt tail' symbolTable plotTable (polynomial @ [value])
         | Semi :: tail ->
             STA tail symbolTable (plotTable @ [polynomial])
-        | _ -> "Expected ',' or ';' in plot statement" |> ParseError |> raise
+        | _ -> "Expected ',' or ';' in plot statement" |> SyntaxError |> raise
     
     and PRT tList symbolTable plotTable =
-        match tList with
-        | Sym "print" :: tail ->
-            let tail', value = parseNeval tail symbolTable
-            match tail' with
-            | Semi :: tail'' ->
-                let timeStr = DateTime.Now.ToString("hh:mm:ss")
-                Console.WriteLine($"{timeStr}| {value}")
-                STA tail'' symbolTable plotTable
-            | _ -> "Expected ';' after print statement" |> ParseError |> raise
-        | _ -> "Expected 'print' statement" |> ParseError |> raise
+        let tail, value = parseNevalExpr tList symbolTable
+        match tail with
+        | Semi :: tail' ->
+            let timeStr = DateTime.Now.ToString("hh:mm:ss")
+            stdOut.WriteLine($"{timeStr} | {value}")
+            STA tail' symbolTable plotTable
+        | _ -> "Expected ';' after print statement" |> SyntaxError |> raise
     
     STA tList symbolTable []
 
+
 /// Wrapper function for parseNexec to help C# interop.
-let parseNexecCSharp tList symbolTable =
-    let _, symbolTable', plotTable = parseNexec tList symbolTable
+let parseNevalStatCSharp
+    (tList: terminal list) 
+    (symbolTable: Map<string, number>) 
+    (stdOut: System.IO.StringWriter)
+    : Map<string, number> * number array array =
+    let _, symbolTable', plotTable = parseNevalStat tList symbolTable stdOut
+    // Convert plotTable to arrays rather than lists.
     (symbolTable', plotTable |> List.map List.toArray |> List.toArray)
  
- // Prints token list
+
+/// Prints token list
 let rec printTList (lst:list<terminal>) : list<string> = 
     match lst with
     head::tail -> Console.Write("{0} ",head.ToString())
@@ -341,13 +418,13 @@ let rec printTList (lst:list<terminal>) : list<string> =
 [<EntryPoint>]
 let main _  =
     Console.WriteLine("Simple Interpreter")
+    let stdOut = new System.IO.StringWriter();
     let input:string = getInputString()
     let oList = lexer input
-    let _ = printTList oList
-    let symbolTable: Map<string, number> = Map.empty
-    let _, symbolTable', plotTable = parseNexec oList symbolTable 
+    parseStat oList Map.empty |> ignore
+    printTList oList |> ignore
+    let _, symbolTable', plotTable = parseNevalStat oList Map.empty stdOut
     Console.WriteLine($"Symbol Table: {symbolTable'}")
     Console.WriteLine($"Plot Table: {plotTable}")
-    //let Out = parseNeval oList
-    //Console.WriteLine("Result = {0}", snd Out)
+    Console.WriteLine(stdOut.ToString())
     0

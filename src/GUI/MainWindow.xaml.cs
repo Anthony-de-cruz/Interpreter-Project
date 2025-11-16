@@ -43,7 +43,7 @@ public partial class MainWindow : Window
     /// <param name="e"></param>
     private void ExprTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
-        CalculateButton.IsEnabled = ExprTextBox.Text.Length > 0;
+        RunButton.IsEnabled = ExprTextBox.Text.Length > 0;
     }
 
     /// <summary>
@@ -117,14 +117,15 @@ public partial class MainWindow : Window
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
-    private void ExprButton_Click(object sender, RoutedEventArgs e)
+    private void RunButton_Click(object sender, RoutedEventArgs e)
     {
+        System.IO.StringWriter stdOut = new();
         Interpreter.number[][] fsPlots;
         try
         {
             FSharpList<Interpreter.terminal>  lexed = Interpreter.lexer(ExprTextBox.Text);
             //Interpreter.parser(lexed);
-            var result = Interpreter.parseNexecCSharp(lexed, MapModule.Empty<string, Interpreter.number>());
+            var result = Interpreter.parseNevalStatCSharp (lexed, MapModule.Empty<string, Interpreter.number>(), stdOut);
             fsPlots = result.Item2;
         }
         // Todo - Add new exception types to Interpreter to give better feedback.
@@ -150,22 +151,47 @@ public partial class MainWindow : Window
         }
 
         // Display lines.
-        StringBuilder outBuilder = new();
-        foreach (float[] polynomial in plotArray)
-        {
-            outBuilder.Append("Plotting");
-            foreach (float coeff in polynomial)
-                outBuilder.Append($" {coeff}");
-            outBuilder.AppendLine();
+        StringBuilder plotStrBuilder = new();
+        for (int i = 0; i < plotArray.Length; i++) {
+            plotStrBuilder.Append($"{i}: y = ");
+
+            var polynomial = plotArray[i];
+            int nonZeroCoeffs = 0;
+            for (int coeff = 0; coeff < polynomial.Length; coeff++) {
+                if (polynomial[coeff] == 0)
+                    continue;
+
+                if (coeff == 0)
+                    plotStrBuilder.Append($"{polynomial[coeff]}");
+                else if (nonZeroCoeffs == 0)
+                    plotStrBuilder.Append($"{polynomial[coeff]}x^{coeff}");
+                else if (polynomial[coeff] < 0)
+                    // Put a nicer looking "-".
+                    plotStrBuilder.Append($" - {float.Abs(polynomial[coeff])}x^{coeff}");
+                else
+                    plotStrBuilder.Append($" + {polynomial[coeff]}x^{coeff}");
+
+                nonZeroCoeffs++;
+            }
+            plotStrBuilder.AppendLine();
         }
+        PlottingTextBox.Text = plotStrBuilder.ToString();
 
+        // Display stdOut.
         OutputTextBox.Foreground = Brushes.Black;
-        OutputTextBox.Text = outBuilder.ToString();
-
-        for (int i = 0;i < plotArray.Length; i++)
-            
+        OutputTextBox.Text = stdOut.ToString();
 
         // Plot the polynomials.
         plot(plotArray);
+    }
+
+    private void OpenButton_Click(object sender, RoutedEventArgs e)
+    {
+
+    }
+
+    private void SaveButton_Click(object sender, RoutedEventArgs e)
+    {
+
     }
 }
