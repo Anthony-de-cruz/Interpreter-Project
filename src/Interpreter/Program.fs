@@ -168,12 +168,13 @@ let getInputString() : string =
 // CX     -> Complex Number
 
 
-// Parse expression tokens.
+/// Parse expression tokens.
 let parseExpr
     (tList: terminal list)
     (symbolTable: Map<string, number>)
     : terminal list =
-    let rec E tList = (T >> Eopt) tList         // >> is forward function composition operator: let inline (>>) f g x = g(f x)
+    // >> is forward function composition operator: let inline (>>) f g x = g(f x)
+    let rec E tList = (T >> Eopt) tList         
     and Eopt tList = 
         match tList with
         | Add :: tail -> (T >> Eopt) tail
