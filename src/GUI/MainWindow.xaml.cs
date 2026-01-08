@@ -119,70 +119,70 @@ public partial class MainWindow : Window
     /// <param name="e"></param>
     private void RunButton_Click(object sender, RoutedEventArgs e)
     {
-        System.IO.StringWriter stdOut = new();
-        Interpreter.number[][] fsPlots;
-        try
-        {
-            FSharpList<Interpreter.terminal>  lexed = Interpreter.lexer(ExprTextBox.Text);
-            //Interpreter.parser(lexed);
-            var result = Interpreter.parseNevalStatCSharp (lexed, MapModule.Empty<string, Interpreter.number>(), stdOut);
-            fsPlots = result.Item2;
-        }
-        // Todo - Add new exception types to Interpreter to give better feedback.
-        catch (Exception ex)
-        {
-            OutputTextBox.Foreground = Brushes.Red;
-            OutputTextBox.Text = ex.ToString();
-            return;
-        }
+        //System.IO.StringWriter stdOut = new();
+        //Interpreter.number[][] fsPlots;
+        //try
+        //{
+        //    FSharpList<Interpreter.terminal>  lexed = Interpreter.lexer(ExprTextBox.Text);
+        //    //Interpreter.parser(lexed);
+        //    var result = Interpreter.parseNevalStatCSharp (lexed, MapModule.Empty<string, Interpreter.number>(), stdOut);
+        //    fsPlots = result.Item2;
+        //}
+        //// Todo - Add new exception types to Interpreter to give better feedback.
+        //catch (Exception ex)
+        //{
+        //    OutputTextBox.Foreground = Brushes.Red;
+        //    OutputTextBox.Text = ex.ToString();
+        //    return;
+        //}
 
-        // Convert F# array to C# array.
-        float[][] plotArray = new float[fsPlots.Length][];
-        for (int i = 0; i < fsPlots.Length; i++)
-        {
-            plotArray[i] = new float[fsPlots[i].Length];
-            for (int j = 0; j < fsPlots[i].Length; j++)
-            {
-                if (fsPlots[i][j].IsInt)
-                    plotArray[i][j] = ((Interpreter.number.Int)fsPlots[i][j]).Item;
-                else if (fsPlots[i][j].IsFlt)
-                    plotArray[i][j] = (float)((Interpreter.number.Flt)fsPlots[i][j]).Item;
-            }
-        }
+        //// Convert F# array to C# array.
+        //float[][] plotArray = new float[fsPlots.Length][];
+        //for (int i = 0; i < fsPlots.Length; i++)
+        //{
+        //    plotArray[i] = new float[fsPlots[i].Length];
+        //    for (int j = 0; j < fsPlots[i].Length; j++)
+        //    {
+        //        if (fsPlots[i][j].IsInt)
+        //            plotArray[i][j] = ((Interpreter.number.Int)fsPlots[i][j]).Item;
+        //        else if (fsPlots[i][j].IsFlt)
+        //            plotArray[i][j] = (float)((Interpreter.number.Flt)fsPlots[i][j]).Item;
+        //    }
+        //}
 
-        // Display lines.
-        StringBuilder plotStrBuilder = new();
-        for (int i = 0; i < plotArray.Length; i++) {
-            plotStrBuilder.Append($"{i}: y = ");
+        //// Display lines.
+        //StringBuilder plotStrBuilder = new();
+        //for (int i = 0; i < plotArray.Length; i++) {
+        //    plotStrBuilder.Append($"{i}: y = ");
 
-            var polynomial = plotArray[i];
-            int nonZeroCoeffs = 0;
-            for (int coeff = 0; coeff < polynomial.Length; coeff++) {
-                if (polynomial[coeff] == 0)
-                    continue;
+        //    var polynomial = plotArray[i];
+        //    int nonZeroCoeffs = 0;
+        //    for (int coeff = 0; coeff < polynomial.Length; coeff++) {
+        //        if (polynomial[coeff] == 0)
+        //            continue;
 
-                if (coeff == 0)
-                    plotStrBuilder.Append($"{polynomial[coeff]}");
-                else if (nonZeroCoeffs == 0)
-                    plotStrBuilder.Append($"{polynomial[coeff]}x^{coeff}");
-                else if (polynomial[coeff] < 0)
-                    // Put a nicer looking "-".
-                    plotStrBuilder.Append($" - {float.Abs(polynomial[coeff])}x^{coeff}");
-                else
-                    plotStrBuilder.Append($" + {polynomial[coeff]}x^{coeff}");
+        //        if (coeff == 0)
+        //            plotStrBuilder.Append($"{polynomial[coeff]}");
+        //        else if (nonZeroCoeffs == 0)
+        //            plotStrBuilder.Append($"{polynomial[coeff]}x^{coeff}");
+        //        else if (polynomial[coeff] < 0)
+        //            // Put a nicer looking "-".
+        //            plotStrBuilder.Append($" - {float.Abs(polynomial[coeff])}x^{coeff}");
+        //        else
+        //            plotStrBuilder.Append($" + {polynomial[coeff]}x^{coeff}");
 
-                nonZeroCoeffs++;
-            }
-            plotStrBuilder.AppendLine();
-        }
-        PlottingTextBox.Text = plotStrBuilder.ToString();
+        //        nonZeroCoeffs++;
+        //    }
+        //    plotStrBuilder.AppendLine();
+        //}
+        //PlottingTextBox.Text = plotStrBuilder.ToString();
 
-        // Display stdOut.
-        OutputTextBox.Foreground = Brushes.Black;
-        OutputTextBox.Text = stdOut.ToString();
+        //// Display stdOut.
+        //OutputTextBox.Foreground = Brushes.Black;
+        //OutputTextBox.Text = stdOut.ToString();
 
-        // Plot the polynomials.
-        plot(plotArray);
+        //// Plot the polynomials.
+        //plot(plotArray);
     }
 
     private void OpenButton_Click(object sender, RoutedEventArgs e)
