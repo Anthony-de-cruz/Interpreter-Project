@@ -1,9 +1,9 @@
 ﻿using Microsoft.FSharp.Collections;
+using Microsoft.Win32;
 using OxyPlot;
 using OxyPlot.Axes;
-using OxyPlot.Legends;
 using OxyPlot.Series;
-using OxyPlot.Wpf;
+using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
@@ -13,7 +13,7 @@ namespace GUI;
 /// <summary>
 /// Interaction logic for MainWindow.xaml
 /// </summary>
-public partial class MainWindow : Window
+public partial class MainWindow
 {
     /// <summary>
     /// Construct <see cref="MainWindow"/>.
@@ -43,13 +43,15 @@ public partial class MainWindow : Window
     /// <param name="e"></param>
     private void ExprTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
-        RunButton.IsEnabled = ExprTextBox.Text.Length > 0;
+        bool enabled = ExprTextBox.Text.Length > 0;
+        RunButton.IsEnabled = enabled;
+        SaveButton.IsEnabled = enabled;
     }
 
     /// <summary>
     /// Handles plotting
     /// </summary>
-    private void plot(float[][] polyCoefficients)
+    private void Plot(float[][] polyCoefficients)
     {
         var model = new PlotModel();
 
@@ -119,79 +121,122 @@ public partial class MainWindow : Window
     /// <param name="e"></param>
     private void RunButton_Click(object sender, RoutedEventArgs e)
     {
-        //System.IO.StringWriter stdOut = new();
-        //Interpreter.number[][] fsPlots;
-        //try
-        //{
-        //    FSharpList<Interpreter.terminal>  lexed = Interpreter.lexer(ExprTextBox.Text);
-        //    //Interpreter.parser(lexed);
-        //    var result = Interpreter.parseNevalStatCSharp (lexed, MapModule.Empty<string, Interpreter.number>(), stdOut);
-        //    fsPlots = result.Item2;
-        //}
-        //// Todo - Add new exception types to Interpreter to give better feedback.
-        //catch (Exception ex)
-        //{
-        //    OutputTextBox.Foreground = Brushes.Red;
-        //    OutputTextBox.Text = ex.ToString();
-        //    return;
-        //}
+        StringWriter stdOut = new();
+        FSharpList<FSharpList<Interpreter.VL>> fsPlotTable;
+        try
+        {
+            FSharpList<Interpreter.Token> lexed = Interpreter.lexer(ExprTextBox.Text);
+            Interpreter.PROG ast = Interpreter.buildProgram(
+                lexed,
+                MapModule.Empty<string, Interpreter.NM>()).Item1;
+            fsPlotTable = Interpreter.executeProgram(
+                ast,
+                MapModule.Empty<string, Interpreter.NM>(),
+                stdOut).Item2;
+        }
+        catch (Exception ex)
+        {
+            OutputTextBox.Foreground = Brushes.Red;
+            OutputTextBox.Text = ex.ToString();
+            return;
+        }
 
-        //// Convert F# array to C# array.
-        //float[][] plotArray = new float[fsPlots.Length][];
-        //for (int i = 0; i < fsPlots.Length; i++)
-        //{
-        //    plotArray[i] = new float[fsPlots[i].Length];
-        //    for (int j = 0; j < fsPlots[i].Length; j++)
-        //    {
-        //        if (fsPlots[i][j].IsInt)
-        //            plotArray[i][j] = ((Interpreter.number.Int)fsPlots[i][j]).Item;
-        //        else if (fsPlots[i][j].IsFlt)
-        //            plotArray[i][j] = (float)((Interpreter.number.Flt)fsPlots[i][j]).Item;
-        //    }
-        //}
+        // Convert F# array to C# array.
+        float[][] plotArray = new float[fsPlotTable.Length][];
+        for (int i = 0; i < fsPlotTable.Length; i++)
+        {
+            plotArray[i] = new float[fsPlotTable[i].Length];
+            for (int j = 0; j < fsPlotTable[i].Length; j++)
+            {
+                if (fsPlotTable[i][j].IsInt)
+                    plotArray[i][j] = ((Interpreter.VL.Int)fsPlotTable[i][j]).Item;
+                else if (fsPlotTable[i][j].IsFlt)
+                    plotArray[i][j] = (float)((Interpreter.VL.Flt)fsPlotTable[i][j]).Item;
+            }
+        }
 
-        //// Display lines.
-        //StringBuilder plotStrBuilder = new();
-        //for (int i = 0; i < plotArray.Length; i++) {
-        //    plotStrBuilder.Append($"{i}: y = ");
+        // Display lines.
+        StringBuilder plotStrBuilder = new();
+        for (int i = 0; i < plotArray.Length; i++) {
+            plotStrBuilder.Append($"{i}: y = ");
 
-        //    var polynomial = plotArray[i];
-        //    int nonZeroCoeffs = 0;
-        //    for (int coeff = 0; coeff < polynomial.Length; coeff++) {
-        //        if (polynomial[coeff] == 0)
-        //            continue;
+            var polynomial = plotArray[i];
+            int nonZeroCoeffs = 0;
+            for (int coeff = 0; coeff < polynomial.Length; coeff++) {
+                if (polynomial[coeff] == 0)
+                    continue;
 
-        //        if (coeff == 0)
-        //            plotStrBuilder.Append($"{polynomial[coeff]}");
-        //        else if (nonZeroCoeffs == 0)
-        //            plotStrBuilder.Append($"{polynomial[coeff]}x^{coeff}");
-        //        else if (polynomial[coeff] < 0)
-        //            // Put a nicer looking "-".
-        //            plotStrBuilder.Append($" - {float.Abs(polynomial[coeff])}x^{coeff}");
-        //        else
-        //            plotStrBuilder.Append($" + {polynomial[coeff]}x^{coeff}");
+                if (coeff == 0)
+                    plotStrBuilder.Append($"{polynomial[coeff]}");
+                else if (nonZeroCoeffs == 0)
+                    plotStrBuilder.Append($"{polynomial[coeff]}x^{coeff}");
+                else if (polynomial[coeff] < 0)
+                    // Put a nicer looking "-".
+                    plotStrBuilder.Append($" - {float.Abs(polynomial[coeff])}x^{coeff}");
+                else
+                    plotStrBuilder.Append($" + {polynomial[coeff]}x^{coeff}");
 
-        //        nonZeroCoeffs++;
-        //    }
-        //    plotStrBuilder.AppendLine();
-        //}
-        //PlottingTextBox.Text = plotStrBuilder.ToString();
+                nonZeroCoeffs++;
+            }
+            plotStrBuilder.AppendLine();
+        }
+        PlottingTextBox.Text = plotStrBuilder.ToString();
 
-        //// Display stdOut.
-        //OutputTextBox.Foreground = Brushes.Black;
-        //OutputTextBox.Text = stdOut.ToString();
+        // Display stdOut.
+        OutputTextBox.Foreground = Brushes.Black;
+        OutputTextBox.Text = stdOut.ToString();
 
-        //// Plot the polynomials.
-        //plot(plotArray);
+        // Plot the polynomials.
+        Plot(plotArray);
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     private void OpenButton_Click(object sender, RoutedEventArgs e)
     {
-
+        var dialog = new OpenFileDialog
+        {
+            Title = "Open file",
+            Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*",
+            CheckFileExists = true,
+            CheckPathExists = true
+        };
+        if (dialog.ShowDialog(this) != true) return;
+        
+        ExprTextBox.Text = File.ReadAllText(dialog.FileName);
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     private void SaveButton_Click(object sender, RoutedEventArgs e)
     {
-
+        var dialog = new SaveFileDialog
+        {
+            Title = "Save file",
+            Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*",
+            DefaultExt = "txt"
+        };
+        if (dialog.ShowDialog(this) != true)
+            return;
+        
+        try
+        {
+            File.WriteAllText(dialog.FileName, ExprTextBox.Text);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Error saving file:\n{ex.Message}",
+                "Save Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error
+            ); 
+        }
     }
 }
