@@ -9,9 +9,9 @@
 // <STA>   ::= <WHL> | <IF> | <ASN> | <PLT> | <PRT>
 // <WHL>   ::= "while" <BE> "{" <PROG> "}"
 // <IF>    ::= "if" <BE> "{" <PROG> "}"
-// <ASN>   ::= "let" <SYM> "=" <E> ";"
+// <ASN>   ::= "let" <SYM> "=" <BE> ";" | "func" <SYM> "=" <BE> ";"
 // <PLT>   ::= "plot" <BE> ";"
-// <PRT>   ::= "print" <BE> ";" | <E> ";"              // Print top level expressions.
+// <PRT>   ::= "print" <BE> ";" | <BE> ";"              // Print top level expressions.
 // <SYM>   ::= <alpha+>
 //
 // EXPRESSIONS
@@ -36,7 +36,7 @@
 //// STATEMENTS
 // PROG  -> Program
 // STA   -> Statement
-// ASN   -> Assignment
+// ASN   -> Variable/Function Assignment
 // PLT   -> Plot
 // PTR   -> Print
 // SYM   -> Symbol
@@ -53,6 +53,7 @@
 // Popt  -> Power/Optional
 // U     -> Unary
 // NM    -> Number
+// VL    -> Value
 // IN    -> Integer
 // FL    -> Floating Point
 
@@ -66,7 +67,7 @@ type PROG  = Stat of STA * PROG | EmptyPROG
 and  STA   = While of WHL | If of IF | Assign of ASN | Plot of PLT | Print of PRT
 and  WHL   = BE * PROG
 and  IF    = BE * PROG
-and  ASN   = String * BE
+and  ASN   = Var of string * BE | Func of string * BE
 and  PLT   = BE
 and  PRT   = BE
 // Expressions.
@@ -96,6 +97,7 @@ type Token = AddT | SubT | MulT | DivT | ModT | PwrT // Maths operators
 let loopSymbol = "while"
 let ifSymbol = "if"
 let assignSymbol = "let"
+let functionSymbol = "func"
 let printSymbol = "print"
 let plotSymbol = "plot"
 let reservedSymbols = Set.ofList [ assignSymbol; printSymbol; plotSymbol ]
@@ -107,8 +109,8 @@ let isDigit c = Char.IsDigit c
 let isAlpha c = Char.IsLetter c
 let intVal (c:char) = int (int c - int '0')
 
-exception SyntaxError of string
-exception RuntimeError of string
+exception SyntaxError of string // An error based on end user input syntax.
+exception RuntimeError of string // An unexpected fault in the interpreter.
 
 // Scans digits to form an int, keeping track of lexer position
 let rec scInt(iStr, iVal, pos) = 
@@ -182,7 +184,7 @@ let getInputString() : string =
 /// Parse tokens and construct an expression AST.
 let buildExpr
     (tList: Token list)
-    (symbolTable: Map<string, VL>)
+    (symbolTable: Map<string, NM>)
     : BE * Token list =
     // Parse boolean expressions.
     // <BE>    ::= <BU> <BEopt> 
@@ -280,7 +282,7 @@ let buildExpr
         | ModT :: tail ->
             let p, tail' = parseP tail
             let topt, tail'' = parseTopt tail'
-            Div (p, topt), tail''
+            Mod (p, topt), tail''
         | _ -> EmptyT, tList
 
     // Parse powers.
@@ -341,15 +343,15 @@ let promote lhs rhs : VL * VL =
 // Evaluate expressions.
 let evalExpr
     (expr: BE)
-    (symbolTable: Map<string, VL>)
+    (symbolTable: Map<string, NM>)
     : VL =
     // Evaluate boolean expressions.
     // <BE>    ::= <BU> <BEopt>
-    let rec evalBE ((bu, beopt): BE) (symbolTable: Map<string, VL>) : VL =
+    let rec evalBE ((bu, beopt): BE) (symbolTable: Map<string, NM>) : VL =
         let buVal = evalBU bu symbolTable
         evalBEopt beopt buVal symbolTable
     // <BEopt> ::= "and" <BU> <BEopt> | "or" <BU> <BEopt> | <empty>
-    and evalBEopt (beopt: BEopt) (lhsBU: VL) (symbolTable: Map<string, VL>) : VL =
+    and evalBEopt (beopt: BEopt) (lhsBU: VL) (symbolTable: Map<string, NM>) : VL =
         match beopt with
         | And (rhsBU, beopt') ->
             let rhsBU' = evalBU rhsBU symbolTable // Evaluate RHS boolean unary; Evaluate next BEopt.
@@ -367,7 +369,7 @@ let evalExpr
         
     // Evaluate boolean unary.
     // <BU>    ::= "!" <BU> | <BT>
-    and evalBU (bu: BU) (symbolTable: Map<string, VL>) : VL =
+    and evalBU (bu: BU) (symbolTable: Map<string, NM>) : VL =
         match bu with
         | Not bu' -> match evalBU bu' symbolTable with
                      | Int buVal -> if buVal <> 0 then Int 1 else Int 0
@@ -376,11 +378,11 @@ let evalExpr
 
     // Evaluate boolean terms.
     // <BT>    ::= <E> <BTopt>
-    and evalBT ((e, btopt): BT) (symbolTable: Map<string, VL>) : VL = 
+    and evalBT ((e, btopt): BT) (symbolTable: Map<string, NM>) : VL = 
         let eVal = evalE e symbolTable
         evalBTopt btopt eVal symbolTable
     // <BTopt> ::= "==" <E> <BTopt> | "!=" <E> <BTopt> | ">" <E> <BTopt> | "<" <E> <BTopt> | <empty>
-    and evalBTopt (btopt: BTopt) (lhsE: VL) (symbolTable: Map<string, VL>) : VL =
+    and evalBTopt (btopt: BTopt) (lhsE: VL) (symbolTable: Map<string, NM>) : VL =
         match btopt with
         | Eql (rhsE, btopt') ->
             let rhsE' = evalE rhsE symbolTable // Evaluate RHS boolean term; Evaluate next BTopt.
@@ -410,11 +412,11 @@ let evalExpr
 
     // Evaluate expressions.
     // <E>    ::= <T> <Eopt>
-    and evalE ((t, eopt): E) (symbolTable: Map<string, VL>) : VL =
+    and evalE ((t, eopt): E) (symbolTable: Map<string, NM>) : VL =
         let tVal = evalT t symbolTable // Evaluate LHS term.
         evalEopt eopt tVal symbolTable
     // <Eopt> ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
-    and evalEopt (eopt: Eopt) (lhsT: VL) (symbolTable: Map<string, VL>): VL = 
+    and evalEopt (eopt: Eopt) (lhsT: VL) (symbolTable: Map<string, NM>): VL = 
        match eopt with
        | Add (rhsT, eopt') ->
            let rhsT' = evalT rhsT symbolTable // Evaluate RHS term; Evaluate next Eopt.
@@ -432,11 +434,11 @@ let evalExpr
 
     // Evaluate terms.
     // <T>    ::= <P> <Topt>
-    and evalT ((p, topt): T) (symbolTable: Map<string, VL>) : VL =
+    and evalT ((p, topt): T) (symbolTable: Map<string, NM>) : VL =
         let pVal = evalP p symbolTable // Evaluate LHS power.
         evalTopt topt pVal symbolTable
     // <Topt> ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
-    and evalTopt (topt: Topt) (lhsP: VL) (symbolTable: Map<string, VL>): VL = 
+    and evalTopt (topt: Topt) (lhsP: VL) (symbolTable: Map<string, NM>): VL = 
        match topt with
        | Mul (rhsP, topt') ->
            let rhsP' = evalP rhsP symbolTable // Evaluate RHS power; Evaluate next Topt.
@@ -449,7 +451,7 @@ let evalExpr
            match promote lhsP rhsP' with
            // F# evaluates floating point division by 0 as infinity, so we must manually catch this.
            | Int _, Int 0 | Flt _, Flt 0.0 -> "Attempted to divide by zero" |> DivideByZeroException |> raise 
-           | Int lhs, Int rhs -> evalTopt topt' (Flt ((float lhs) / (float rhs))) symbolTable // Force a promotion.
+           | Int lhs, Int rhs -> evalTopt topt' (Int (lhs / rhs)) symbolTable
            | Flt lhs, Flt rhs -> evalTopt topt' (Flt (lhs / rhs)) symbolTable
            | _ -> "Bad evaluation: Cannot DIV different types" |> RuntimeError |> raise 
        | Mod (rhsP, topt') ->
@@ -464,11 +466,11 @@ let evalExpr
 
     // Evaluate powers.
     // <P>    ::= <U> <Popt>
-    and evalP ((u, popt): P) (symbolTable: Map<string, VL>) : VL =
+    and evalP ((u, popt): P) (symbolTable: Map<string, NM>) : VL =
         let uVal = evalU u symbolTable // Evaluate LHS unary.
         evalPopt popt uVal symbolTable
     // <Popt> ::= "^" <U> <Popt> | <empty>
-    and evalPopt (popt: Popt) (lhsU: VL) (symbolTable: Map<string, VL>): VL = 
+    and evalPopt (popt: Popt) (lhsU: VL) (symbolTable: Map<string, NM>): VL = 
        match popt with
         | Pwr (rhsU, popt') ->
             let rhsU' = evalU rhsU symbolTable // Evaluate RHS unary; Evaluate next Topt.
@@ -480,7 +482,7 @@ let evalExpr
 
     // Evaluate unary.
     // <U>    ::= "-" <U> | <NM>
-    and evalU (u: U) (symbolTable: Map<string, VL>) : VL =
+    and evalU (u: U) (symbolTable: Map<string, NM>) : VL =
         match u with
         | Neg u' -> match evalU u' symbolTable with // Evaluate next unary.
                     | Int uVal' -> Int -uVal'
@@ -492,11 +494,12 @@ let evalExpr
     // <VL>    ::= <IN> | <FL>
     // <IN>    ::= <digit+>
     // <FL>    ::= <digit+> "." <digit+>
-    and evalNMvl (nm: NM) (symbolTable: Map<string, VL>) : VL =
+    and evalNMvl (nm: NM) (symbolTable: Map<string, NM>) : VL =
         match nm with 
         | Val value -> value // Evaluate VL
         | Sym name -> 
-            if name |> symbolTable.ContainsKey then evalNMvl (Val symbolTable[name]) symbolTable
+            if name |> symbolTable.ContainsKey
+            then evalNMvl symbolTable[name] symbolTable
             // This should be impossible. Undefined symbol should be caught during AST build.
             else $"Undefined symbol \"{name}\"" |> SyntaxError |> raise
         | BE expr -> evalBE expr symbolTable
@@ -505,11 +508,11 @@ let evalExpr
 // Parse tokens and construct a program AST.
 let rec buildProgram
     (tList: Token list)
-    (symbolTable: Map<string, VL>)
-    : PROG * Token list * Map<string, VL> =
+    (symbolTable: Map<string, NM>)
+    : PROG * Token list * Map<string, NM> =
     // Parse program.
     // <PROG>  ::= <STA> <PROG> | <empty>
-    let rec parsePROG (tList: Token list) (symbolTable: Map<string, VL>) : PROG * Token list * Map<string, VL> =
+    let rec parsePROG (tList: Token list) (symbolTable: Map<string, NM>) : PROG * Token list * Map<string, NM> =
         match tList with
         | RcurlT :: _ -> (EmptyPROG, tList, symbolTable) // End of block.
         | [] -> (EmptyPROG, tList, symbolTable) // EOF.
@@ -520,7 +523,7 @@ let rec buildProgram
 
     // Parse statements.
     // <STA>   ::= <WHL> | <IF> | <ASN> | <PLT> | <PRT>
-    and parseSTA (tList: Token list) (symbolTable: Map<string, VL>) : STA * Token list * Map<string, VL> =
+    and parseSTA (tList: Token list) (symbolTable: Map<string, NM>) : STA * Token list * Map<string, NM> =
         match tList with
         | SymT s :: tail when s = loopSymbol -> // Parse loop statement.
             let whl, tail', symbolTable' = parseWHL tail symbolTable
@@ -528,9 +531,9 @@ let rec buildProgram
         | SymT s :: tail when s = ifSymbol -> // Parse if statement.
             let ifs, tail', symbolTable' = parseIF tail symbolTable
             (If ifs), tail', symbolTable'
-        | SymT s :: tail when s = assignSymbol -> // Parse assignment statement.
-            let asn, tail', symbolTable' = parseASN tail symbolTable
-            (Assign asn), tail', symbolTable'
+        | SymT s :: _ when (s = assignSymbol || s = functionSymbol ) -> // Parse assignment statement.
+            let asn, tail, symbolTable' = parseASN tList symbolTable
+            (Assign asn), tail, symbolTable'
         | SymT s :: tail when s = plotSymbol -> // Parse plot statement.
             let plt, tail' = parsePLT tail symbolTable 
             (Plot plt), tail', symbolTable
@@ -538,14 +541,14 @@ let rec buildProgram
             let prt, tail' = parsePRT tail symbolTable 
             (Print prt), tail', symbolTable
         //| SymT s :: _ -> $"Undefined statement '{s}'" |> SyntaxError |> raise
-        | [] -> "Bad token: Expecting statement symbol" |> SyntaxError |> raise
+        | [] -> "Bad token: Expecting statement symbol" |> RuntimeError |> raise
         | _ -> // Attempt to parse top level expressions as a print statement.
             let prt, tail' = parsePRT tList symbolTable 
             (Print prt), tail', symbolTable
 
     // Parse loops.
     // <WHL>   ::= "while" <BE> "{" <PROG> "}"
-    and parseWHL (tList: Token list) (symbolTable: Map<string, VL>) : WHL * Token list * Map<string, VL> =
+    and parseWHL (tList: Token list) (symbolTable: Map<string, NM>) : WHL * Token list * Map<string, NM> =
         let expr, tList' = buildExpr tList symbolTable
         match tList' with
         | LcurlT :: tail ->
@@ -558,7 +561,7 @@ let rec buildProgram
 
     // Parse ifs.
     // <IF>    ::= "if" <BE> "{" <PROG> "}"
-    and parseIF (tList: Token list) (symbolTable: Map<string, VL>) : IF * Token list * Map<string, VL> =
+    and parseIF (tList: Token list) (symbolTable: Map<string, NM>) : IF * Token list * Map<string, NM> =
         let expr, tList' = buildExpr tList symbolTable
         match tList' with
         | LcurlT :: tail ->
@@ -570,21 +573,34 @@ let rec buildProgram
         | _ -> "Expecting '{' after 'if'." |> SyntaxError |> raise
 
     // Parse assignments.
-    // <ASN>    ::= "let" <SYM> "=" <NM>
-    and parseASN (tList: Token list) (symbolTable: Map<string, VL>) : ASN * Token list * Map<string, VL> = 
+    // <ASN>   ::= "let" <SYM> "=" <BE> ";" | "func" <SYM> "=" <BE> ";">
+    and parseASN (tList: Token list) (symbolTable: Map<string, NM>) : ASN * Token list * Map<string, NM> =
         match tList with
-        | SymT name :: SetT :: tail ->
-            let expr, tail' = buildExpr tail symbolTable
-            match tail' with
-            | SemiT :: tail'' ->
-                let symbolTable' = Map.add name (Int 0) symbolTable // Init an empty value.
-                (name, expr), tail'', symbolTable'
-            | _ -> "Expected ';' after assignment" |> SyntaxError |> raise
-        | _ -> "Expected symbol and '=' after 'let'" |> SyntaxError |> raise
+        | SymT keyword :: tail when keyword = assignSymbol ->
+            match tail with
+            | SymT name :: SetT :: tail' ->
+                let expr, tail'' = buildExpr tail' symbolTable
+                match tail'' with
+                | SemiT :: tail''' ->
+                    let symbolTable' = Map.add name (Val (Int 0)) symbolTable // Init an empty value.
+                    Var (name, expr), tail''', symbolTable'
+                | _ -> "Expected ';' after assignment" |> SyntaxError |> raise
+            | _ -> "Expected symbol and '=' after 'func'" |> SyntaxError |> raise
+        | SymT keyword :: tail when keyword = functionSymbol ->
+            match tail with
+            | SymT name :: SetT :: tail' ->
+                let expr, tail'' = buildExpr tail' symbolTable
+                match tail'' with
+                | SemiT :: tail''' ->
+                    let symbolTable' = Map.add name (Val (Int 0)) symbolTable // Init an empty value.
+                    Func (name, expr), tail''', symbolTable'
+                | _ -> "Expected ';' after assignment" |> SyntaxError |> raise
+            | _ -> "Expected symbol and '=' after 'let'" |> SyntaxError |> raise
+        | _ -> "Bad token: Expecting assignment statement symbol" |> RuntimeError |> raise
 
     // Parse plots.
     // <PLT>   ::= "plot" <E> ";"
-    and parsePLT (tList: Token list) (symbolTable: Map<string, VL>) : PLT * Token list =
+    and parsePLT (tList: Token list) (symbolTable: Map<string, NM>) : PLT * Token list =
         let expr, tail = buildExpr tList symbolTable
         match tail with
         | SemiT :: tail' ->
@@ -593,7 +609,7 @@ let rec buildProgram
     
     // Parse prints.
     // <PRT>   ::= "print" <E> ";" | <E> ";"
-    and parsePRT (tList: Token list) (symbolTable: Map<string, VL>) : PRT * Token list =
+    and parsePRT (tList: Token list) (symbolTable: Map<string, NM>) : PRT * Token list =
         let expr, tail = buildExpr tList symbolTable
         match tail with
         | SemiT :: tail' ->
@@ -602,6 +618,7 @@ let rec buildProgram
 
     parsePROG tList symbolTable
 
+// Determine if a VL is true or false by comparing to a zero value.
 let isTrue = function
     | Int v -> v <> 0
     | Flt v -> v <> 0.0
@@ -609,12 +626,12 @@ let isTrue = function
 // Execute constructed ASTs.
 let executeProgram
     (program: PROG)
-    (symbolTable: Map<string, VL>)
+    (symbolTable: Map<string, NM>)
     (stdOut: System.IO.StringWriter)
-    : Map<string, VL> * VL list list =
+    : Map<string, NM> * VL list list =
     // Execute program.
     // <PROG>  ::= <STA> <PROG> | <empty>
-    let rec execPROG (prog: PROG) (symbolTable: Map<string, VL>) (plotTable: VL list list) : Map<string, VL> * VL list list =
+    let rec execPROG (prog: PROG) (symbolTable: Map<string, NM>) (plotTable: VL list list) : Map<string, NM> * VL list list =
         match prog with
         | Stat (sta, nextProg) -> // Execute current statement; execute next statement.
             let symbolTable', plotTable' = execSTA sta symbolTable plotTable
@@ -624,7 +641,7 @@ let executeProgram
     
     // Execute statements.
     // <STA>   ::= <WHL> | <IF> | <ASN> | <PLT> | <PRT>
-    and execSTA (sta: STA) (symbolTable: Map<string, VL>) (plotTable: VL list list) : Map<string, VL> * VL list list =
+    and execSTA (sta: STA) (symbolTable: Map<string, NM>) (plotTable: VL list list) : Map<string, NM> * VL list list =
         match sta with
         | While whl -> // Execute loop.
             execWHL whl symbolTable plotTable
@@ -640,7 +657,7 @@ let executeProgram
 
     // Execute loops.
     // <WHL>   ::= "while" <BE> "{" <PROG> "}"
-    and execWHL ((be, prog): WHL) (symbolTable: Map<string, VL>) (plotTable: VL list list) : Map<string, VL> * VL list list =
+    and execWHL ((be, prog): WHL) (symbolTable: Map<string, NM>) (plotTable: VL list list) : Map<string, NM> * VL list list =
         let value = evalExpr be symbolTable
         if isTrue value
         then let symbolTable', plotTable' = execPROG prog symbolTable plotTable
@@ -649,28 +666,32 @@ let executeProgram
 
     // Execute ifs.
     // <IF>    ::= "if" <BE> "{" <PROG> "}"
-    and execIF ((be, prog): IF) (symbolTable: Map<string, VL>) (plotTable: VL list list) : Map<string, VL> * VL list list =
+    and execIF ((be, prog): IF) (symbolTable: Map<string, NM>) (plotTable: VL list list) : Map<string, NM> * VL list list =
         let value = evalExpr be symbolTable
         if isTrue value
         then execPROG prog symbolTable plotTable
         else symbolTable, plotTable
 
     // Execute assignments.
-    // <ASN>    ::= "let" <SYM> "=" <NM>
-    and execASN ((symbol, e): ASN) (symbolTable: Map<string, VL>) : Map<string, VL> =
-         let value = evalExpr e symbolTable
-         Map.add symbol value symbolTable // Evaluate expression and add to symbol table.
+    // <ASN>   ::= "let" <SYM> "=" <BE> ";" | "func" <SYM> "=" <BE> ";"
+    and execASN (asn: ASN) (symbolTable: Map<string, NM>) : Map<string, NM> =
+         match asn with
+         | Func (symbol, be) ->
+            Map.add symbol (BE be) symbolTable // Add expression to symbol table.
+         | Var (symbol, be) ->
+            let value = evalExpr be symbolTable
+            Map.add symbol (Val value) symbolTable // Evaluate expression and add to symbol table.
 
     // Execute plots.
     // <PLT>   ::= "plot" <E> ";"
-    and execPLT (e: PLT) (symbolTable: Map<string, VL>) (plotTable: VL list list) : VL list list =
+    and execPLT (e: PLT) (symbolTable: Map<string, NM>) (plotTable: VL list list) : VL list list =
         let value = evalExpr e symbolTable
         // Todo calculate actual points.
         plotTable @ [[value]] // Evaluate expression and add to plot table.
         
     // Execute prints.
     // <PRT>   ::= "print" <E> ";" | <E> ";"
-    and execPRT (e: PRT) (symbolTable: Map<string, VL>) : unit =
+    and execPRT (e: PRT) (symbolTable: Map<string, NM>) : unit =
         let value = evalExpr e symbolTable
         let timeStr = DateTime.Now.ToString("hh:mm:ss")
         stdOut.WriteLine($"{timeStr} | {value}") // Evaluate and write to IO writer.
