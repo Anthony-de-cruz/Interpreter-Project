@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:oxy="http://oxyplot.org/wpf"
         mc:Ignorable="d"
-        Title="Interpreter" Height="675" Width="1200">
+        Title="Interpreter" Height="675" Width="1400">
     <DockPanel>
         <!-- Top Menu -->
         <Menu DockPanel.Dock="Top" Background="White">
@@ -41,8 +41,7 @@
                         Width="80"
                         Height="26"
                         Margin="0,0,5,0"
-                        Click="OpenButton_Click"
-                        IsEnabled="False" />
+                        Click="OpenButton_Click" />
                             <Button x:Name="SaveButton" 
                         Content="Save" 
                         Width="80"

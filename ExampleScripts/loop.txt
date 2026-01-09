@@ -1,0 +1,8 @@
+let x = 0;
+func myLineOne = x^2 + x + 5;
+
+while x < 5 {
+	let x = x + 1;
+
+	plot myLineOne;
+} 
