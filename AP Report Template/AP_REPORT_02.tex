@@ -49,38 +49,48 @@ Please replace this section with your own abstract. An abstract is a brief summa
 \chapter{Introduction}
 \label{chap:intro}
 
-The introduction should be brief and comprise the following:
-
 \section{Project statement}
 This project focuses on developing a desktop maths software solution with GUI that uses an interpreter. This project play an important role in areas such as education and research, offering a platform to test mathematical concepts easier. Fsharp is used for the interpreter and Csharp (WPF) is ued for the GUI.
 The software has been developed over a period of 4 months and was split into sprints (see Development History \ref{Chap:DevHist}). We accomplished this via modular design and 
-testing each part at every stage. Git was used for version control and Github's kanban board feature was used to break down tasks. The final deliverable is a capable desktop maths software solution with a GUI that succesfully links a maths interpreterwith a user-friendly interface.
+testing each part at every stage. Git was used for version control and Github's kanban board feature was used to break down tasks. The final deliverable is a capable desktop maths software solution with a GUI that succesfully links a maths interpreter with a user-friendly interface.
 
 
 \section{Aims and objectives}
+The main overarching goal of the project is to develop a capable maths intepreter and GUI with a user friendly interface, this is broken down further into the main project objectives below: 
 
-Clearly specify the main aim and objective(s) and subsequent tasks of your project. You can use a MoSCoW to further elaborate on each individual task. If you do so, use a table with three columns (e.g.\ Table \ref{Table1}), the first one having the four categories; the second column a brief description of the task and the third column further elaboration or comments on the task. Note that a MoSCoW is normally for functional requirements only. You should treat non-functional requirements in a separate MoSCoW.
+\begin{center}
+{\large Project Objectives} \\[0.5em] 
+\rule{0.6\textwidth}{0.4pt} \\[1em]   
+\begin{minipage}{0.6\textwidth}       
+\begin{enumerate}
+    \item To implement a interpreter capable of correctly intepreting and executing arithmetic expressions, managing variable assignment and executing control flow loops.
+    \item To create a responsive GUI that is capable of accepting user commands, displaying results and displaying errors
+    \item To create a plotting section in the GUI to plot both linear and polynomial functions and have interactive capabilities such as zooming in and out.
+    \item To provide a method of visualization by rendering the parse tree
+    \item To provide a method of GPU speed up to increare the quality of plotting
+\end{enumerate}
+\end{minipage}
+\end{center}
 
 \begin{table}[h]
-\caption{MoSCoW}
+\caption{(Functional) MoSCoW}
 \begin{center}
 \begin{tabular}{|p{1in}|p{2in}|p{2.5in}|} \hline
 Priority & Task & Comments \\ \hline \hline
 \multirow{3}{1in}{Must}
-& Task M1 & Comment M1 \\ \cline{2-3}
-& Task M2 & Comment M2 \\ \cline{2-3}
-& ... & ... \\ \hline \hline
+& To implement a intpreter cabable of correctly parsing and executing arithmetic expressions & Is the most essential task within the brief \\ \cline{2-3}
+& To implement variable management allowing assignment of values to variables and to use variables in expressions & An important feature needed to allow polynomials later in the project  \\ \cline{2-3}
+& To develop a basic GUI that has a command prompt for user input and a text field for displaying results or errors & Essential for user interaction and error reporting\\ \cline{2-3}
+& To be able to plot both linear and polynomial functions within the GUI & The main visualization requirement, needed to visualise mathematical functions. \\ \hline \hline
 \multirow{3}{1in}{Should}
-& Task S1 & Comment S1 \\ \cline{2-3}
-& Task S2 & Comment S2 \\ \cline{2-3}
-& ... & ... \\ \hline \hline
+& To extend the interpreter with control flow & Implementing for loops \\ \cline{2-3}
+& To implement interactive plotting features E.g. zooming in and out & Enhances the user experience by allowing the user to explore the plane  \\ \hline \hline
 \multirow{3}{1in}{Could}
-& Task C1 & Comment C1 \\ \cline{2-3}
-& Task C2 & Comment C2 \\ \cline{2-3}
-& ... & ... \\ \hline \hline
+& To visualize the parse tree  &  Helpful for debugging the parsing logic\\ \cline{2-3}
+& To implement GPU acceleration & To optimise the rendering of the grid line during real-time interaction \\ \hline \hline
 \multirow{3}{1in}{Should not}
-& Task SN1 & Comment SN1 \\ \cline{2-3}
-& ... & ... \\ \hline
+& To implement a compiler/transpiler & Overly ambitious given the development time. \\ \cline{2-3}
+& To implement advanced mathematical features (differentiation/integration) & We wanted to ensurte the core intpreter was robust and also dropped to the development time. \\ \hline
 \end{tabular}
 \label{Table1}
 \end{center}
@@ -125,18 +135,71 @@ A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to f
 \section{Sprint 2: Adding unary minus, powers and mod}
 
 \subsection{BNF}
+\begin{verbatim}
+<E>    ::= <T> <Eopt>
+<Eopt> ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+<T>    ::= <U> <Topt>
+<Topt> ::= "*" <U> <Topt> | "/" <U> <Topt> | "%" <U> <Topt> | <empty>
+<U>    ::= "-" <U> | <P>
+<P>    ::= <NR> <Popt>
+<Popt> ::= "^" <NR> <Popt> | <empty>
+<NR>   ::= "Num" <value> | "(" <E> ")"
+\end{verbatim}
 
 \subsection{Updated GUI}
 
-\section{Sprint 3: ...}
+\begin{figure}[htb]
+\begin{center}
+\includegraphics[width=0.9 \columnwidth]{GUI_02.png}
+\caption{Update GUI}
+\label{gui02}
+\end{center}
+\end{figure}
 
-\section{Sprint n: Your penultimate version}
+\begin{figure}[htb]
+\begin{center}
+\includegraphics[width=0.9 \columnwidth]{GUI_03.png}
+\caption{Tutorial Page}
+\label{gui03}
+\end{center}
+\end{figure}
 
-Make sure that the total number of sprints n(+1) does not become too unwieldy. A rule of thumb would expect it to be somewhere between 6 and 12.
+\subsection{Testing}
+A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to from here.
 
+\section{Sprint 3: Added floating point}
 \subsection{BNF}
+\begin{verbatim}
+<E>    ::= <T> <Eopt>
+<Eopt> ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+<T>    ::= <P> <Topt>
+<Topt> ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
+<P>    ::= <U> <Popt>
+<Popt> ::= "^" <U> <Popt> | <empty>
+<U>    ::= "-" <U> | <NM>
+<NM>   ::= <IN> | <FL> | "(" <E> ")"
+<IN>   ::= <digit>+
+<FL>   ::= <digit>+ "." <digit>+
+\end{verbatim}
 
-\subsection{}
+\subsection{Testing}
+A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to from here.
+
+\section{Sprint 4: Added linear plotting}
+
+\subsection{Updated GUI}
+\begin{figure}[htb]
+\begin{center}
+\includegraphics[width=0.9 \columnwidth]{GUI_04.png}
+\caption{Plot GUI}
+\label{gui04}
+\end{center}
+\end{figure}
+
+\subsection{Testing}
+A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to from here.
+
+\section{Sprint 5: Added polynomial plotting}
 
 \chapter{Final deliverable}\label{Impl}
 
