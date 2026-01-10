@@ -11,7 +11,7 @@ let ``Basic Binop Lexing Valid`` () =
         ("3 ^ 8", [IntT 3; PwrT; IntT 8])
     ]
     |> List.iter (fun (testCase, expectedResult) ->
-        Assert.Equal<Token>(expectedResult, lexer testCase)
+        Assert.Equal<Terminal>(expectedResult, lexer testCase)
     )
   
 [<Fact>]
@@ -38,7 +38,7 @@ let ``Basic Floating Point Lexing Valid`` () =
         ("100.001", [FltT 100.001])
     ]
     |> List.iter (fun (testCase, expectedResult) ->
-        Assert.Equal<Token>(expectedResult, lexer testCase)
+        Assert.Equal<Terminal>(expectedResult, lexer testCase)
     )
   
 [<Fact>]
@@ -67,5 +67,5 @@ let ``Basic Symbol Lexing Valid`` () =
         ("3 + variable", [IntT 3; AddT; SymT "variable"])
     ]
     |> List.iter (fun (testCase, expectedResult) ->
-        Assert.Equal<Token>(expectedResult, lexer testCase)
+        Assert.Equal<Terminal>(expectedResult, lexer testCase)
     )

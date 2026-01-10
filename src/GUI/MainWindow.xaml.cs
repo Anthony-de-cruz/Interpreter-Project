@@ -1,10 +1,10 @@
-﻿using Microsoft.FSharp.Collections;
+﻿using System.Globalization;
+using Microsoft.FSharp.Collections;
 using Microsoft.Win32;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
 using System.IO;
-using System.Text;
 using System.Windows;
 using System.Windows.Media;
 
@@ -16,11 +16,22 @@ namespace GUI;
 public partial class MainWindow
 {
     /// <summary>
+    /// 
+    /// </summary>
+    private double _minimumX = -10.0;
+    private double _maximumX = 10.0;
+    private double _step = 0.1;
+
+    /// <summary>
     /// Construct <see cref="MainWindow"/>.
     /// </summary>
     public MainWindow()
     {
         InitializeComponent();
+
+        MinimumXTextBox.Text = _minimumX.ToString(CultureInfo.CurrentCulture);
+        MaximumXTextBox.Text = _maximumX.ToString(CultureInfo.CurrentCulture);
+        ResolutionTextBox.Text = (1/_step).ToString(CultureInfo.CurrentCulture);
     }
 
     /// <summary>
@@ -49,22 +60,17 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Handles plotting
+    /// 
     /// </summary>
-    private void Plot(float[][] polyCoefficients)
+    /// <returns></returns>
+    private PlotModel CreatePlotModel()
     {
         var model = new PlotModel();
-
-        // Plot range
-        double xMin = -10.0;
-        double xMax = 10.0;
-        double deltaX = 0.1; // the step
-
         model.Axes.Add(new LinearAxis
         {
             Position = AxisPosition.Bottom,
-            Minimum = xMin,
-            Maximum = xMax,
+            Minimum = _minimumX,
+            Maximum = _maximumX,
             Title = "X",
             AxislineStyle = LineStyle.Solid,
             AxislineThickness = 2,
@@ -78,8 +84,8 @@ public partial class MainWindow
         {
             Position = AxisPosition.Left,
             Title = "Y",
-            Minimum = xMin,
-            Maximum = xMax,
+            Minimum = _minimumX,
+            Maximum = _maximumX,
             AxislineStyle = LineStyle.Solid,
             AxislineThickness = 2,
             MajorGridlineStyle = LineStyle.Solid,
@@ -87,30 +93,81 @@ public partial class MainWindow
             MajorGridlineColor = OxyColor.FromRgb(200, 200, 200),
             MinorGridlineColor = OxyColor.FromRgb(230, 230, 230)
         });
+        return model;
+    }
 
-        foreach (var coeffs in polyCoefficients)
+    /// <summary>
+    /// Plot each line individually and generate an interference pattern.
+    /// </summary>
+    /// <param name="lines"></param>
+    private void InterferencePlot(double[][] lines)
+    {
+        if (lines.Length == 0) return;
+
+        PlotModel model = CreatePlotModel();
+        double[] interferencePattern = new double[lines[0].Length];
+
+        // Plot individual lines.
+        for (int i = 0; i < lines.Length; i++)
+        {
+            var individualSeries = new LineSeries 
+            { 
+                Color = OxyColor.FromArgb(80, 100, 100, 255),
+                StrokeThickness = 1,
+                Title = $"Line {i}"
+            };
+        
+            double x = _minimumX;
+            for (int j = 0; j < lines[i].Length; j++)
+            {
+                individualSeries.Points.Add(new DataPoint(x, lines[i][j]));
+                interferencePattern[j] += lines[i][j]; // Accumulate for interference.
+                x += _step;
+            }
+        
+            model.Series.Add(individualSeries);
+        }
+
+        // Plot interference pattern.
+        var interferenceSeries = new LineSeries 
+        { 
+            Color = OxyColor.FromRgb(255, 0, 0),
+            StrokeThickness = 3,
+            Title = "Interference Pattern"
+        };
+    
+        double xFinal = _minimumX;
+        for (int j = 0; j < lines[0].Length; j++)
+        {
+            interferenceSeries.Points.Add(new DataPoint(xFinal, interferencePattern[j]));
+            xFinal += _step;
+        }
+
+        model.Series.Add(interferenceSeries);
+        PlotView.Model = model;
+    }    
+
+    /// <summary>
+    /// Plot each line individually.
+    /// </summary>
+    /// <param name="lines"></param>
+    private void IndividualPlot(double[][] lines)
+    {
+        if (lines.Length == 0) return;
+        
+        PlotModel model = CreatePlotModel();
+        
+        foreach (double[] line in lines)
         {
             var lineSeries = new LineSeries();
-            
-            for(double currentX = xMin; currentX <= xMax; currentX += deltaX)
+            double x = _minimumX;
+            foreach (double y in line)
             {
-                double yVal = 0.0;
-
-                // calculate y = a[0] + b[1]*x + c[2] * x^2 + ....
-                for (int i = 0; i < coeffs.Length; i++)
-                {
-
-                    yVal += coeffs[i] * Math.Pow(currentX, i);
-                }
-
-                lineSeries.Points.Add(new DataPoint(currentX, yVal));
+                x += _step;
+                lineSeries.Points.Add(new DataPoint(x, y));
             }
-
-            // Add entire line (all the points)
             model.Series.Add(lineSeries);
         }
-        
-
         PlotView.Model = model;
     }
 
@@ -125,14 +182,14 @@ public partial class MainWindow
         FSharpList<FSharpList<Interpreter.VL>> fsPlotTable;
         try
         {
-            FSharpList<Interpreter.Token> lexed = Interpreter.lexer(ExprTextBox.Text);
-            Interpreter.PROG ast = Interpreter.buildProgram(
-                lexed,
-                MapModule.Empty<string, Interpreter.NM>()).Item1;
-            fsPlotTable = Interpreter.executeProgram(
-                ast,
-                MapModule.Empty<string, Interpreter.NM>(),
-                stdOut).Item2;
+            // Run interpreter.
+            FSharpList<Interpreter.Terminal> lexed = Interpreter.lexer(ExprTextBox.Text);
+            Interpreter.PROG ast = Interpreter.buildProgram(lexed,
+                MapModule.Empty<string, Interpreter.NM>()
+                    .Add("x",  Interpreter.NM.NewVal(Interpreter.VL.NewFlt(0)))).Item1;
+            fsPlotTable = Interpreter.executeProgram(ast,
+                MapModule.Empty<string, Interpreter.NM>()
+                    .Add("x",  Interpreter.NM.NewVal(Interpreter.VL.NewFlt(0))), stdOut).Item2;
         }
         catch (Exception ex)
         {
@@ -142,56 +199,32 @@ public partial class MainWindow
         }
 
         // Convert F# array to C# array.
-        float[][] plotArray = new float[fsPlotTable.Length][];
+        double[][] plotArray = new double[fsPlotTable.Length][];
         for (int i = 0; i < fsPlotTable.Length; i++)
         {
-            plotArray[i] = new float[fsPlotTable[i].Length];
+            plotArray[i] = new double[fsPlotTable[i].Length];
             for (int j = 0; j < fsPlotTable[i].Length; j++)
             {
                 if (fsPlotTable[i][j].IsInt)
                     plotArray[i][j] = ((Interpreter.VL.Int)fsPlotTable[i][j]).Item;
                 else if (fsPlotTable[i][j].IsFlt)
-                    plotArray[i][j] = (float)((Interpreter.VL.Flt)fsPlotTable[i][j]).Item;
+                    plotArray[i][j] = ((Interpreter.VL.Flt)fsPlotTable[i][j]).Item;
             }
         }
-
-        // Display lines.
-        StringBuilder plotStrBuilder = new();
-        for (int i = 0; i < plotArray.Length; i++) {
-            plotStrBuilder.Append($"{i}: y = ");
-
-            var polynomial = plotArray[i];
-            int nonZeroCoeffs = 0;
-            for (int coeff = 0; coeff < polynomial.Length; coeff++) {
-                if (polynomial[coeff] == 0)
-                    continue;
-
-                if (coeff == 0)
-                    plotStrBuilder.Append($"{polynomial[coeff]}");
-                else if (nonZeroCoeffs == 0)
-                    plotStrBuilder.Append($"{polynomial[coeff]}x^{coeff}");
-                else if (polynomial[coeff] < 0)
-                    // Put a nicer looking "-".
-                    plotStrBuilder.Append($" - {float.Abs(polynomial[coeff])}x^{coeff}");
-                else
-                    plotStrBuilder.Append($" + {polynomial[coeff]}x^{coeff}");
-
-                nonZeroCoeffs++;
-            }
-            plotStrBuilder.AppendLine();
-        }
-        PlottingTextBox.Text = plotStrBuilder.ToString();
 
         // Display stdOut.
         OutputTextBox.Foreground = Brushes.Black;
         OutputTextBox.Text = stdOut.ToString();
 
         // Plot the polynomials.
-        Plot(plotArray);
+        if (InterferenceCheckbox.IsChecked ==  true) 
+            InterferencePlot(plotArray);
+        else
+            IndividualPlot(plotArray);
     }
 
     /// <summary>
-    /// 
+    /// Read a text file to load in a new program.
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
@@ -210,7 +243,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 
+    /// Save the current program to a text file.
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
@@ -237,6 +270,54 @@ public partial class MainWindow
                 MessageBoxButton.OK,
                 MessageBoxImage.Error
             ); 
+        }
+    }
+
+    /// <summary>
+    /// Clear the existing plot view.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private void ClearButton_Click(object sender, RoutedEventArgs e)
+    {
+        PlotView.Model = new();
+    }
+
+    /// <summary>
+    /// Update plot range maximum.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private void MinimumXTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (MinimumXTextBox.Text.Length > 0
+            && Double.TryParse(MinimumXTextBox.Text, out double result))
+            _minimumX = result;
+    }
+
+    /// <summary>
+    /// Update plot range minimum.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private void MaximumXTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (MaximumXTextBox.Text.Length > 0
+            && Double.TryParse(MinimumXTextBox.Text, out double result))
+            _maximumX = result;
+    }
+
+    /// <summary>
+    /// Update plot resolution.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private void ResolutionTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (ResolutionTextBox.Text.Length > 0
+            && Double.TryParse(MinimumXTextBox.Text, out double result))
+        {
+            _step = 1 / result;
         }
     }
 }
