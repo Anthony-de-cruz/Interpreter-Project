@@ -628,6 +628,9 @@ let executeProgram
     (program: PROG)
     (symbolTable: Map<string, NM>)
     (stdOut: System.IO.StringWriter)
+    (plotXmin: float)
+    (plotXmax: float)
+    (plotXstep: float)
     : Map<string, NM> * VL list list =
     // Execute program.
     // <PROG>  ::= <STA> <PROG> | <empty>
@@ -685,9 +688,8 @@ let executeProgram
     // Execute plots.
     // <PLT>   ::= "plot" <E> ";"
     and execPLT (e: PLT) (symbolTable: Map<string, NM>) (plotTable: VL list list) : VL list list =
-        let xMin, xMax, step = -10.0, 10.0, 0.1
         let yValues = 
-            [ for x in xMin .. step .. xMax -> // Calculate Y points by injecting an X value for each step.
+            [ for x in plotXmin .. plotXstep .. plotXmax -> // Calculate Y points by injecting an X value for each step.
                 let tempTable = Map.add "x" (Val (Flt x)) symbolTable
                 evalExpr e tempTable ]
         let timeStr = DateTime.Now.ToString("hh:mm:ss")
@@ -719,7 +721,7 @@ let main _  =
      printTList tList |> ignore
      let symbolTable = Map.add "x" (Val (Int 0)) Map.empty // Initialise a special xs
      let ast, _, _ = buildProgram tList symbolTable // Build AST from lexed input.
-     let symbolTable', plotTable = executeProgram ast symbolTable stdOut // Execute AST.
+     let symbolTable', plotTable = executeProgram ast symbolTable stdOut -10.0 10.0 0.1 // Execute AST.
      Console.WriteLine($"Final Symbol Table: {symbolTable'}")
      Console.WriteLine($"Plot Table: {plotTable}")
      Console.WriteLine(stdOut.ToString())

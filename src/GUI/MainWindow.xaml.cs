@@ -16,10 +16,18 @@ namespace GUI;
 public partial class MainWindow
 {
     /// <summary>
-    /// 
+    /// The lowest X value to be rendered.
     /// </summary>
     private double _minimumX = -10.0;
+
+    /// <summary>
+    /// The highest X value to be rendered.
+    /// </summary>
     private double _maximumX = 10.0;
+
+    /// <summary>
+    /// The incremental step for line point plotting.
+    /// </summary>
     private double _step = 0.1;
 
     /// <summary>
@@ -60,9 +68,9 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 
+    /// Create the Oxyplot graph model.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>The plot model.</returns>
     private PlotModel CreatePlotModel()
     {
         var model = new PlotModel();
@@ -117,12 +125,12 @@ public partial class MainWindow
                 Title = $"Line {i}"
             };
         
-            double x = _minimumX;
+            double x = _maximumX;
             for (int j = 0; j < lines[i].Length; j++)
             {
                 individualSeries.Points.Add(new DataPoint(x, lines[i][j]));
                 interferencePattern[j] += lines[i][j]; // Accumulate for interference.
-                x += _step;
+                x -= _step;
             }
         
             model.Series.Add(individualSeries);
@@ -136,11 +144,11 @@ public partial class MainWindow
             Title = "Interference Pattern"
         };
     
-        double xFinal = _minimumX;
+        double xFinal = _maximumX;
         for (int j = 0; j < lines[0].Length; j++)
         {
             interferenceSeries.Points.Add(new DataPoint(xFinal, interferencePattern[j]));
-            xFinal += _step;
+            xFinal -= _step;
         }
 
         model.Series.Add(interferenceSeries);
@@ -157,13 +165,16 @@ public partial class MainWindow
         
         PlotModel model = CreatePlotModel();
         
-        foreach (double[] line in lines)
+        for (int i =  0; i < lines.Length; i++)
         {
-            var lineSeries = new LineSeries();
-            double x = _minimumX;
-            foreach (double y in line)
+            var lineSeries = new LineSeries()
             {
-                x += _step;
+                Title = $"Line {i}"
+            };
+            double x = _maximumX;
+            foreach (double y in lines[i])
+            {
+                x -= _step;
                 lineSeries.Points.Add(new DataPoint(x, y));
             }
             model.Series.Add(lineSeries);
@@ -179,7 +190,7 @@ public partial class MainWindow
     private void RunButton_Click(object sender, RoutedEventArgs e)
     {
         StringWriter stdOut = new();
-        FSharpList<FSharpList<Interpreter.VL>> fsPlotTable;
+        FSharpList<Microsoft.FSharp.Collections.FSharpList<Interpreter.VL>> fsPlotTable;
         try
         {
             // Run interpreter.
@@ -189,7 +200,7 @@ public partial class MainWindow
                     .Add("x",  Interpreter.NM.NewVal(Interpreter.VL.NewFlt(0)))).Item1;
             fsPlotTable = Interpreter.executeProgram(ast,
                 MapModule.Empty<string, Interpreter.NM>()
-                    .Add("x",  Interpreter.NM.NewVal(Interpreter.VL.NewFlt(0))), stdOut).Item2;
+                    .Add("x",  Interpreter.NM.NewVal(Interpreter.VL.NewFlt(0))), stdOut, _minimumX, _maximumX, _step).Item2;
         }
         catch (Exception ex)
         {
@@ -303,7 +314,7 @@ public partial class MainWindow
     private void MaximumXTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
         if (MaximumXTextBox.Text.Length > 0
-            && Double.TryParse(MinimumXTextBox.Text, out double result))
+            && Double.TryParse(MaximumXTextBox.Text, out double result))
             _maximumX = result;
     }
 
@@ -315,7 +326,7 @@ public partial class MainWindow
     private void ResolutionTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
         if (ResolutionTextBox.Text.Length > 0
-            && Double.TryParse(MinimumXTextBox.Text, out double result))
+            && Double.TryParse(ResolutionTextBox.Text, out double result))
         {
             _step = 1 / result;
         }
