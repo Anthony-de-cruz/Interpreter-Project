@@ -43,8 +43,8 @@ let ``Brief Test Conditions B1`` () =
     // Statements.
     [
         ("let x = 3; let y = (2*x)-x^2*5;", Int -39)
-        ("let x = 3; let y = (2*x)-x^2*5/2;", Int -16) // Fails due to promotion to float in div.
-        ("let x = 3; let y = (2*x)-x^2*(5/2);", Int -12) // Fails due to promotion to float in div.
+        ("let x = 3; let y = (2*x)-x^2*5/2;", Int -16)
+        ("let x = 3; let y = (2*x)-x^2*(5/2);", Int -12)
         ("let x = 3; let y = (2*x)-x^2*5/2.0;", Flt -16.5)
         ("let x = 3; let y = (2*x)-x^2*5%2;", Int 5)
         ("let x = 3; let y = (2*x)-x^2*(5%2);", Int -3)
@@ -53,6 +53,79 @@ let ``Brief Test Conditions B1`` () =
         let prog, _, _ = buildProgram (lexer testCase) Map.empty
         let symbolTable, _ = executeProgram prog Map.empty (new System.IO.StringWriter()) 0 0 0
         Assert.Equal<NM>((Val expectedResult), symbolTable["y"])
+    )
+
+[<Fact>]
+let ``Conditional Statements Valid`` () =
+    [
+        ("let i = 0; while i < 5 { let i = i + 1; } let y = i;", Int 5)
+        ("let i = 7; if i == 7 { let y = 8; }", Int 8)
+    ]
+    |> List.iter (fun (testCase, expectedResult) ->
+        let prog, _, _ = buildProgram (lexer testCase) Map.empty
+        let symbolTable, _ = executeProgram prog Map.empty (new System.IO.StringWriter()) 0 0 0
+        Assert.Equal<NM>((Val expectedResult), symbolTable["y"])
+    )
+
+[<Fact>]
+let ``Conditional Statements Invalid`` () =
+    [
+        "let i = 0; while i < 5 let y = i;"
+        "let i = 0; if i < 5 let y = i;"
+        "let i = 0; while { let y = i; }"
+        "let i = 0; if { let y = i; }"
+    ]
+    |> List.iter (fun testCase ->
+        fun () ->
+            buildExpr (lexer testCase) Map.empty |> ignore
+        |> Assert.Throws<SyntaxError>
+        |> ignore
+    )
+
+[<Fact>]
+let ``Conditionals Valid`` () =
+    [
+        ("5 > 3", Int 1)
+        ("3 > 5", Int 0)
+        ("3 < 5", Int 1)
+        ("5 < 3", Int 0)
+        ("2 == 2", Int 1)
+        ("2 == 1", Int 0)
+        ("2 != 2", Int 0)
+        ("2 != 1", Int 1)
+        ("!1", Int 0)
+        ("!0", Int 1)
+        ("1 and 1", Int 1)
+        ("0 and 1", Int 0)
+        ("1 and 0", Int 0)
+        ("0 and 0", Int 0)
+        ("5 > 2 and 10 == 4", Int 0)
+        ("5 > 2 and 10 != 4", Int 1)
+        ("1 or 1", Int 1)
+        ("0 or 1", Int 1)
+        ("1 or 0", Int 1)
+        ("0 or 0", Int 0)
+        ("5 > 2 or 10 == 4", Int 1)
+        ("5 > 2 or 10 != 4", Int 1)
+    ]
+    |> List.iter (fun (testCase, expectedResult) ->
+        let ex, _ = buildExpr (lexer testCase) Map.empty
+        Assert.Equal<VL>(expectedResult, (evalExpr ex Map.empty))
+    )
+
+[<Fact>]
+let ``Conditionals Invalid`` () =
+    [
+        ">"
+        "< 3"
+        "!"
+        "3 == 5 !="
+    ]
+    |> List.iter (fun testCase ->
+        fun () ->
+            buildExpr (lexer testCase) Map.empty |> ignore
+        |> Assert.Throws<SyntaxError>
+        |> ignore
     )
 
 [<Fact>]

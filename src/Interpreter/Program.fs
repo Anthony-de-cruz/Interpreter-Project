@@ -372,8 +372,8 @@ let evalExpr
     and evalBU (bu: BU) (symbolTable: Map<string, NM>) : VL =
         match bu with
         | Not bu' -> match evalBU bu' symbolTable with
-                     | Int buVal -> if buVal <> 0 then Int 1 else Int 0
-                     | Flt buVal -> if buVal <> 0 then Flt 1.0 else Flt 0.0
+                     | Int buVal -> if buVal <> 0 then Int 0 else Int 1
+                     | Flt buVal -> if buVal <> 0 then Flt 0.0 else Flt 1.0
         | BT bt -> evalBT bt symbolTable
 
     // Evaluate boolean terms.
