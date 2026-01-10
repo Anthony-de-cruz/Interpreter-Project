@@ -1,0 +1,14 @@
+func myCubicLine = x^3 + x^2 + x - 3;   # Define a cubic function.
+
+let i = 0;
+while i < 4 {                   # A loop with a boolean comparison.
+	let i = i + 1;
+
+	plot myCubicLine + 1.5^i;    # Plot a series of cubic lines.
+
+
+	if i == 3 {   # Plot a quadratic line when i is 3.
+		plot x^2 + x - 1.5 * i;  
+	}
+}
+

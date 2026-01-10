@@ -51,7 +51,7 @@ let ``Brief Test Conditions B1`` () =
     ]
     |> List.iter (fun (testCase, expectedResult) ->
         let prog, _, _ = buildProgram (lexer testCase) Map.empty
-        let symbolTable, _ = executeProgram prog Map.empty (new System.IO.StringWriter())
+        let symbolTable, _ = executeProgram prog Map.empty (new System.IO.StringWriter()) 0 0 0
         Assert.Equal<NM>((Val expectedResult), symbolTable["y"])
     )
 

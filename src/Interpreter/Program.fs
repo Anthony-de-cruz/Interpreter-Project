@@ -86,11 +86,11 @@ and  U     = Neg of U | NM of NM
 and  NM    = Val of VL | Sym of string | BE of BE
 and  VL    = Int of int | Flt of float
 
-// Lexer tokens.
-type Token = AddT | SubT | MulT | DivT | ModT | PwrT // Maths operators
-             | AndT | OrT | EqlT | NEqlT | GrtT | LssT | NotT // Boolean operators
-             | LparT | RparT | LcurlT | RcurlT | SetT | CmaT | SemiT // Structure
-             | IntT of int | FltT of float | SymT of string // Values
+// Lexer terminals.
+type Terminal = AddT | SubT | MulT | DivT | ModT | PwrT // Maths operators
+                | AndT | OrT | EqlT | NEqlT | GrtT | LssT | NotT // Boolean operators
+                | LparT | RparT | LcurlT | RcurlT | SetT | CmaT | SemiT // Structure
+                | IntT of int | FltT of float | SymT of string // Values
 
 // Reserved symbols.
 // Todo - Consider adding keywords to the terminal union.
@@ -181,19 +181,19 @@ let getInputString() : string =
     Console.Write("Enter an expression: ")
     Console.ReadLine()
 
-/// Parse tokens and construct an expression AST.
+/// Parse terminals and construct an expression AST.
 let buildExpr
-    (tList: Token list)
+    (tList: Terminal list)
     (symbolTable: Map<string, NM>)
-    : BE * Token list =
+    : BE * Terminal list =
     // Parse boolean expressions.
     // <BE>    ::= <BU> <BEopt> 
-    let rec parseBE tList : BE * Token list = 
+    let rec parseBE tList : BE * Terminal list = 
         let bu, tail = parseBU tList
         let beopt, tail' = parseBEopt tail
         (bu, beopt), tail'
     // <BEopt> ::= "and" <BU> <BEopt> | "or" <BU> <BEopt> | <empty>
-    and parseBEopt tList : BEopt * Token list =
+    and parseBEopt tList : BEopt * Terminal list =
         match tList with
         | AndT :: tail ->
             let bu, tail' = parseBU tail
@@ -207,7 +207,7 @@ let buildExpr
 
     // Parse boolean unary.
     // <BU>    ::= "!" <BU> | <BT> 
-    and parseBU tList : BU * Token list =
+    and parseBU tList : BU * Terminal list =
         match tList with
         | NotT :: tail ->
             let bu, tail' = parseBU tail
@@ -218,12 +218,12 @@ let buildExpr
 
     // Parse boolean terms.
     // <BT>    ::= <E> <BTopt>
-    and parseBT tList : BT * Token list =
+    and parseBT tList : BT * Terminal list =
         let e, tail = parseE tList
         let btopt, tail' = parseBTopt tail
         (e, btopt), tail'
     // <BTopt> ::= "==" <E> <BTopt> | "!=" <E> <BTopt> | ">" <E> <BTopt> | "<" <E> <BTopt> | <empty>
-    and parseBTopt tList : BTopt * Token list =
+    and parseBTopt tList : BTopt * Terminal list =
         match tList with
         | EqlT :: tail ->
             let e, tail' = parseE tail
@@ -245,12 +245,12 @@ let buildExpr
 
     // Parse expressions.
     // <E>    ::= <T> <Eopt>
-    and parseE tList : E * Token list =
+    and parseE tList : E * Terminal list =
         let u, tail = parseT tList
         let popt, tail' = parseEopt tail
         (u, popt), tail'
     // <Eopt> ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
-    and parseEopt tList : Eopt * Token list = 
+    and parseEopt tList : Eopt * Terminal list = 
         match tList with
         | AddT :: tail ->
             let t, tail' = parseT tail
@@ -264,12 +264,12 @@ let buildExpr
 
     // Parse terms.
     // <T>    ::= <P> <Topt>
-    and parseT tList : T * Token list =
+    and parseT tList : T * Terminal list =
         let u, tail = parseP tList
         let popt, tail' = parseTopt tail
         (u, popt), tail'
     // <Topt> ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
-    and parseTopt tList : Topt * Token list =
+    and parseTopt tList : Topt * Terminal list =
         match tList with
         | MulT :: tail ->
             let p, tail' = parseP tail
@@ -287,12 +287,12 @@ let buildExpr
 
     // Parse powers.
     // <P>    ::= <U> <Popt>
-    and parseP tList: P * Token list = 
+    and parseP tList: P * Terminal list = 
         let u, tail = parseU tList
         let popt, tail' = parsePopt tail
         (u, popt), tail'
     // <Popt> ::= "^" <U> <Popt> | <empty>
-    and parsePopt tList : Popt * Token list =
+    and parsePopt tList : Popt * Terminal list =
         match tList with
         | PwrT :: tail ->
             let u, tail' = parseU tail
@@ -302,7 +302,7 @@ let buildExpr
 
     // Parse unary.
     // <U>    ::= "-" <U> | <NM>
-    and parseU tList : U * Token list =
+    and parseU tList : U * Terminal list =
         match tList with
         | SubT :: tail ->
             let u, tail' = parseU tail
@@ -316,7 +316,7 @@ let buildExpr
     // <VL>    ::= <IN> | <FL>
     // <IN>    ::= <digit+>
     // <FL>    ::= <digit+> "." <digit+>
-    and parseNMvl tList : NM * Token list =
+    and parseNMvl tList : NM * Terminal list =
         match tList with
         | SymT name :: tail ->
             if name |> symbolTable.ContainsKey then Sym name, tail
@@ -505,14 +505,14 @@ let evalExpr
         | BE expr -> evalBE expr symbolTable
     evalBE expr symbolTable
 
-// Parse tokens and construct a program AST.
+// Parse terminal and construct a program AST.
 let rec buildProgram
-    (tList: Token list)
+    (tList: Terminal list)
     (symbolTable: Map<string, NM>)
-    : PROG * Token list * Map<string, NM> =
+    : PROG * Terminal list * Map<string, NM> =
     // Parse program.
     // <PROG>  ::= <STA> <PROG> | <empty>
-    let rec parsePROG (tList: Token list) (symbolTable: Map<string, NM>) : PROG * Token list * Map<string, NM> =
+    let rec parsePROG (tList: Terminal list) (symbolTable: Map<string, NM>) : PROG * Terminal list * Map<string, NM> =
         match tList with
         | RcurlT :: _ -> (EmptyPROG, tList, symbolTable) // End of block.
         | [] -> (EmptyPROG, tList, symbolTable) // EOF.
@@ -523,7 +523,7 @@ let rec buildProgram
 
     // Parse statements.
     // <STA>   ::= <WHL> | <IF> | <ASN> | <PLT> | <PRT>
-    and parseSTA (tList: Token list) (symbolTable: Map<string, NM>) : STA * Token list * Map<string, NM> =
+    and parseSTA (tList: Terminal list) (symbolTable: Map<string, NM>) : STA * Terminal list * Map<string, NM> =
         match tList with
         | SymT s :: tail when s = loopSymbol -> // Parse loop statement.
             let whl, tail', symbolTable' = parseWHL tail symbolTable
@@ -541,14 +541,14 @@ let rec buildProgram
             let prt, tail' = parsePRT tail symbolTable 
             (Print prt), tail', symbolTable
         //| SymT s :: _ -> $"Undefined statement '{s}'" |> SyntaxError |> raise
-        | [] -> "Bad token: Expecting statement symbol" |> RuntimeError |> raise
+        | [] -> "Bad : Expecting statement symbol" |> RuntimeError |> raise
         | _ -> // Attempt to parse top level expressions as a print statement.
             let prt, tail' = parsePRT tList symbolTable 
             (Print prt), tail', symbolTable
 
     // Parse loops.
     // <WHL>   ::= "while" <BE> "{" <PROG> "}"
-    and parseWHL (tList: Token list) (symbolTable: Map<string, NM>) : WHL * Token list * Map<string, NM> =
+    and parseWHL (tList: Terminal list) (symbolTable: Map<string, NM>) : WHL * Terminal list * Map<string, NM> =
         let expr, tList' = buildExpr tList symbolTable
         match tList' with
         | LcurlT :: tail ->
@@ -561,7 +561,7 @@ let rec buildProgram
 
     // Parse ifs.
     // <IF>    ::= "if" <BE> "{" <PROG> "}"
-    and parseIF (tList: Token list) (symbolTable: Map<string, NM>) : IF * Token list * Map<string, NM> =
+    and parseIF (tList: Terminal list) (symbolTable: Map<string, NM>) : IF * Terminal list * Map<string, NM> =
         let expr, tList' = buildExpr tList symbolTable
         match tList' with
         | LcurlT :: tail ->
@@ -574,7 +574,7 @@ let rec buildProgram
 
     // Parse assignments.
     // <ASN>   ::= "let" <SYM> "=" <BE> ";" | "func" <SYM> "=" <BE> ";">
-    and parseASN (tList: Token list) (symbolTable: Map<string, NM>) : ASN * Token list * Map<string, NM> =
+    and parseASN (tList: Terminal list) (symbolTable: Map<string, NM>) : ASN * Terminal list * Map<string, NM> =
         match tList with
         | SymT keyword :: tail when keyword = assignSymbol ->
             match tail with
@@ -585,7 +585,7 @@ let rec buildProgram
                     let symbolTable' = Map.add name (Val (Int 0)) symbolTable // Init an empty value.
                     Var (name, expr), tail''', symbolTable'
                 | _ -> "Expected ';' after assignment" |> SyntaxError |> raise
-            | _ -> "Expected symbol and '=' after 'func'" |> SyntaxError |> raise
+            | _ -> "Expected symbol and '=' after 'let'" |> SyntaxError |> raise
         | SymT keyword :: tail when keyword = functionSymbol ->
             match tail with
             | SymT name :: SetT :: tail' ->
@@ -595,12 +595,12 @@ let rec buildProgram
                     let symbolTable' = Map.add name (Val (Int 0)) symbolTable // Init an empty value.
                     Func (name, expr), tail''', symbolTable'
                 | _ -> "Expected ';' after assignment" |> SyntaxError |> raise
-            | _ -> "Expected symbol and '=' after 'let'" |> SyntaxError |> raise
+            | _ -> "Expected symbol and '=' after 'func'" |> SyntaxError |> raise
         | _ -> "Bad token: Expecting assignment statement symbol" |> RuntimeError |> raise
 
     // Parse plots.
     // <PLT>   ::= "plot" <E> ";"
-    and parsePLT (tList: Token list) (symbolTable: Map<string, NM>) : PLT * Token list =
+    and parsePLT (tList: Terminal list) (symbolTable: Map<string, NM>) : PLT * Terminal list =
         let expr, tail = buildExpr tList symbolTable
         match tail with
         | SemiT :: tail' ->
@@ -609,7 +609,7 @@ let rec buildProgram
     
     // Parse prints.
     // <PRT>   ::= "print" <E> ";" | <E> ";"
-    and parsePRT (tList: Token list) (symbolTable: Map<string, NM>) : PRT * Token list =
+    and parsePRT (tList: Terminal list) (symbolTable: Map<string, NM>) : PRT * Terminal list =
         let expr, tail = buildExpr tList symbolTable
         match tail with
         | SemiT :: tail' ->
@@ -628,6 +628,9 @@ let executeProgram
     (program: PROG)
     (symbolTable: Map<string, NM>)
     (stdOut: System.IO.StringWriter)
+    (plotXmin: float)
+    (plotXmax: float)
+    (plotXstep: float)
     : Map<string, NM> * VL list list =
     // Execute program.
     // <PROG>  ::= <STA> <PROG> | <empty>
@@ -685,9 +688,13 @@ let executeProgram
     // Execute plots.
     // <PLT>   ::= "plot" <E> ";"
     and execPLT (e: PLT) (symbolTable: Map<string, NM>) (plotTable: VL list list) : VL list list =
-        let value = evalExpr e symbolTable
-        // Todo calculate actual points.
-        plotTable @ [[value]] // Evaluate expression and add to plot table.
+        let yValues = 
+            [ for x in plotXmin .. plotXstep .. plotXmax -> // Calculate Y points by injecting an X value for each step.
+                let tempTable = Map.add "x" (Val (Flt x)) symbolTable
+                evalExpr e tempTable ]
+        let timeStr = DateTime.Now.ToString("hh:mm:ss")
+        stdOut.WriteLine($"{timeStr} | Plotting line {plotTable.Length}")
+        plotTable @ [yValues]
         
     // Execute prints.
     // <PRT>   ::= "print" <E> ";" | <E> ";"
@@ -698,7 +705,7 @@ let executeProgram
     execPROG program symbolTable []
 
 /// Prints token list
-let rec printTList (lst:list<Token>) : list<string> = 
+let rec printTList (lst:list<Terminal>) : list<string> = 
     match lst with
     head::tail -> Console.Write("{0} ",head.ToString())
                   printTList tail
@@ -712,9 +719,10 @@ let main _  =
      let input:string = getInputString()
      let tList = lexer input // Lex input.
      printTList tList |> ignore
-     let ast, _, _ = buildProgram tList Map.empty // Build AST from lexed input.
-     let symbolTable, plotTable = executeProgram ast Map.empty stdOut // Execute AST.
-     Console.WriteLine($"Final Symbol Table: {symbolTable}")
+     let symbolTable = Map.add "x" (Val (Int 0)) Map.empty // Initialise a special xs
+     let ast, _, _ = buildProgram tList symbolTable // Build AST from lexed input.
+     let symbolTable', plotTable = executeProgram ast symbolTable stdOut -10.0 10.0 0.1 // Execute AST.
+     Console.WriteLine($"Final Symbol Table: {symbolTable'}")
      Console.WriteLine($"Plot Table: {plotTable}")
      Console.WriteLine(stdOut.ToString())
      0
