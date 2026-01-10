@@ -1,0 +1,20 @@
+# Pseudo-Carrier waves.
+func carrierA = x^4;
+func carrierB = x^2;
+plot (carrierA - carrierB);
+
+# Positive envelop to modulate carrier
+func envelope = (x^2 + 2) / (x^2 + 10);
+plot envelope;
+
+let phase = 0;
+while phase < 4000 {
+    let phase = phase + 1000;
+
+    # Phase-shifted carriers (to get an variable shift)
+    func waveA = (carrierA) + phase;
+    func waveB = (carrierB) - phase;
+
+    # Plot the combined carriers, modulating with an envelope.
+    #plot (waveA - waveB) * envelope;
+}

@@ -3,24 +3,104 @@
 // Date: 23/10/2022
 // Reference: Peter Sestoft, Grammars and parsing with F#, Tech. Report
 
+// Grammar in BNF: ( Current )
+// STATEMENTS
+// <PROG>  ::= <STA> <PROG> | <empty>
+// <STA>   ::= <WHL> | <IF> | <ASN> | <PLT> | <PRT>
+// <WHL>   ::= "while" <BE> "{" <PROG> "}"
+// <IF>    ::= "if" <BE> "{" <PROG> "}"
+// <ASN>   ::= "let" <SYM> "=" <BE> ";" | "func" <SYM> "=" <BE> ";"
+// <PLT>   ::= "plot" <BE> ";"
+// <PRT>   ::= "print" <BE> ";" | <BE> ";"              // Print top level expressions.
+// <SYM>   ::= <alpha+>
+//
+// EXPRESSIONS
+// <BE>    ::= <BU> <BEopt>
+// <BEopt> ::= "and" <BU> <BEopt> | "or" <BU> <BEopt> | <empty>
+// <BU>    ::= "!" <BU> | <BT>
+// <BT>    ::= <E> <BTopt>
+// <BTopt> ::= "==" <E> <BTopt> | "!=" <E> <BTopt> | ">" <E> <BTopt> | "<" <E> <BTopt> | <empty>
+// <E>     ::= <T> <Eopt>
+// <Eopt>  ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+// <T>     ::= <P> <Topt>
+// <Topt>  ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
+// <P>     ::= <U> <Popt>
+// <Popt>  ::= "^" <U> <Popt> | <empty>
+// <U>     ::= "-" <U> | <NM>
+// <NM>    ::= <VL> | <SYM> | "(" <BE> ")"            // Where SYM is defined in symbol table.
+// <VL>    ::= <IN> | <FL>                            // Separate literal value simplifies implementation.
+// <IN>    ::= <digit+>
+// <FL>    ::= <digit+> "." <digit+>
+
+//// KEY
+//// STATEMENTS
+// PROG  -> Program
+// STA   -> Statement
+// ASN   -> Variable/Function Assignment
+// PLT   -> Plot
+// PTR   -> Print
+// SYM   -> Symbol
+//// EXPRESSIONS
+// BE    -> Boolean Expression
+// BEopt -> Boolean Expression/Optional
+// BU    -> Boolean Unary
+// BT    -> Boolean Term
+// E     -> Expression
+// Eopt  -> Expression/Optional
+// T     -> Term
+// Topt  -> Term/Optional
+// P     -> Power
+// Popt  -> Power/Optional
+// U     -> Unary
+// NM    -> Number
+// VL    -> Value
+// IN    -> Integer
+// FL    -> Floating Point
 
 module Interpreter
 
 open System
 
-// Reserved symbols
-// Todo - Consider adding a keyword type to the terminal union.
+// AST NODES.
+// Statements.
+type PROG  = Stat of STA * PROG | EmptyPROG
+and  STA   = While of WHL | If of IF | Assign of ASN | Plot of PLT | Print of PRT
+and  WHL   = BE * PROG
+and  IF    = BE * PROG
+and  ASN   = Var of string * BE | Func of string * BE
+and  PLT   = BE
+and  PRT   = BE
+// Expressions.
+and  BE    = BU * BEopt
+and  BEopt = And of BU * BEopt | Or of BU * BEopt | EmptyBE
+and  BU    = Not of BU | BT of BT
+and  BT    = E * BTopt
+and  BTopt = Eql of E * BTopt | NEql of E * BTopt | Grt of E * BTopt | Lss of E * BTopt | EmptyBT
+and  E     = T * Eopt
+and  Eopt  = Add of T * Eopt | Sub of T * Eopt | EmptyE
+and  T     = P * Topt
+and  Topt  = Mul of P * Topt | Div of P * Topt | Mod of P * Topt | EmptyT
+and  P     = U * Popt
+and  Popt  = Pwr of U * Popt | EmptyP
+and  U     = Neg of U | NM of NM 
+and  NM    = Val of VL | Sym of string | BE of BE
+and  VL    = Int of int | Flt of float
+
+// Lexer terminals.
+type Terminal = AddT | SubT | MulT | DivT | ModT | PwrT // Maths operators
+                | AndT | OrT | EqlT | NEqlT | GrtT | LssT | NotT // Boolean operators
+                | LparT | RparT | LcurlT | RcurlT | SetT | CmaT | SemiT // Structure
+                | IntT of int | FltT of float | SymT of string // Values
+
+// Reserved symbols.
+// Todo - Consider adding keywords to the terminal union.
+let loopSymbol = "while"
+let ifSymbol = "if"
 let assignSymbol = "let"
+let functionSymbol = "func"
 let printSymbol = "print"
 let plotSymbol = "plot"
 let reservedSymbols = Set.ofList [ assignSymbol; printSymbol; plotSymbol ]
-
-// Superset of CX, FT, IN
-type number =  Int of int | Flt of float
-
-// Tokens recognised by lexer
-type terminal = 
-    Add | Sub | Mul | Div | Mod | Pwr | Eql | Lpar | Rpar | Cma | Semi | Num of number | Sym of string
 
 // Utility functions for string / character handling
 let str2lst s = [for c in s -> c]
@@ -29,8 +109,8 @@ let isDigit c = Char.IsDigit c
 let isAlpha c = Char.IsLetter c
 let intVal (c:char) = int (int c - int '0')
 
-exception SyntaxError of string
-exception RuntimeError of string
+exception SyntaxError of string // An error based on end user input syntax.
+exception RuntimeError of string // An unexpected fault in the interpreter.
 
 // Scans digits to form an int, keeping track of lexer position
 let rec scInt(iStr, iVal, pos) = 
@@ -46,9 +126,9 @@ let scNum(iStr, iVal, startingPos) =
         let rest, fractional, fractionalPos = scInt(tail, intVal c, wholePos + 2)
         // Find the positional difference between '.' and our fractional scan.
         let fractional = (float fractional / 10.0 ** (float fractionalPos - (float wholePos + 1.0)))
-        (rest, Flt (float whole + fractional), fractionalPos)
+        (rest, FltT (float whole + fractional), fractionalPos)
     | '.' :: _ -> $"Missing fractional digit @ position {wholePos}" |> SyntaxError |> raise
-    | _ -> (iStr, Int whole, wholePos)
+    | _ -> (iStr, IntT whole, wholePos)
 
 // Scan for a string of alphabet chars.
 let rec scAlpha(iStr: char list, iSymbol: string, pos: int) =
@@ -67,24 +147,33 @@ let lexer input =
     let rec scan input line pos =
         match input with
         | [] -> []
-        | '+'::tail -> Add  :: scan tail line (pos + 1)
-        | '^'::tail -> Pwr  :: scan tail line (pos + 1)
-        | '-'::tail -> Sub  :: scan tail line (pos + 1)
-        | '*'::tail -> Mul  :: scan tail line (pos + 1)
-        | '/'::tail -> Div  :: scan tail line (pos + 1)
-        | '%'::tail -> Mod  :: scan tail line (pos + 1)
-        | '='::tail -> Eql  :: scan tail line (pos + 1)
-        | '('::tail -> Lpar :: scan tail line (pos + 1)
-        | ')'::tail -> Rpar :: scan tail line (pos + 1)
-        | ','::tail -> Cma  :: scan tail line (pos + 1)
-        | ';'::tail -> Semi :: scan tail (line + 1) 0
+        | 'a'::'n'::'d'::tail -> AndT :: scan tail line (pos + 3)
+        | 'o'::'r'::tail -> OrT :: scan tail line (pos + 2)
+        | '+'::tail -> AddT  :: scan tail line (pos + 1)
+        | '^'::tail -> PwrT  :: scan tail line (pos + 1)
+        | '-'::tail -> SubT  :: scan tail line (pos + 1)
+        | '*'::tail -> MulT  :: scan tail line (pos + 1)
+        | '/'::tail -> DivT  :: scan tail line (pos + 1)
+        | '%'::tail -> ModT  :: scan tail line (pos + 1)
+        | '='::'='::tail -> EqlT :: scan tail line (pos + 2)
+        | '!'::'='::tail -> NEqlT :: scan tail line (pos + 2)
+        | '>'::tail -> GrtT :: scan tail line (pos + 1)
+        | '<'::tail -> LssT :: scan tail line (pos + 1)
+        | '!'::tail -> NotT :: scan tail line (pos + 1)
+        | '='::tail -> SetT :: scan tail line (pos + 1)
+        | '('::tail -> LparT :: scan tail line (pos + 1)
+        | ')'::tail -> RparT :: scan tail line (pos + 1)
+        | '{'::tail -> LcurlT :: scan tail line (pos + 1)
+        | '}'::tail -> RcurlT :: scan tail line (pos + 1)
+        | ','::tail -> CmaT  :: scan tail line (pos + 1)
+        | ';'::tail -> SemiT :: scan tail (line + 1) 0
         | '#'::tail -> let tail' = scComment(tail)
                        scan tail' line pos
         | c :: tail when isBlank c -> scan tail line (pos + 1)
         | c :: tail when isDigit c -> let iStr, iVal, pos = scNum(tail, intVal c, pos + 1)
-                                      Num iVal :: scan iStr line (pos + 1)
+                                      iVal :: scan iStr line (pos + 1)
         | c :: tail when isAlpha c -> let iStr, iSymbol, pos = scAlpha(tail, string c, pos + 1)
-                                      Sym iSymbol :: scan iStr line (pos + 1)
+                                      SymT iSymbol :: scan iStr line (pos + 1)
         | c :: _ ->  $"Bad character: {c} @ {line}{pos}" |> SyntaxError |> raise 
     scan (str2lst input) 0 0
 
@@ -92,339 +181,548 @@ let getInputString() : string =
     Console.Write("Enter an expression: ")
     Console.ReadLine()
 
-// Grammar 5 in BNF: ( Current )
-//
-// STATEMENTS
-// <STA>    ::= ( <ASN> | <PLT> | <PTR> ) ";"
-//            | <STA> <STA>
-//            | <empty>
-// <ASN>    ::= "let" <SYM> "=" <NM>
-// <PLT>    ::= "plot" <NM> <PLTopt>
-// <PLTopt> ::= "," <NM> <PLopt> | <empty>
-// <PRT>    ::= "print" <NM>
-// <SYM>    ::= <alpha+>
-//
-// EXPRESSIONS
-// <E>    ::= <T> <Eopt>
-// <Eopt> ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
-// <T>    ::= <P> <Topt>
-// <Topt> ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
-// <P>    ::= <U> <Popt>
-// <Popt> ::= "^" <U> <Popt> | <empty>
-// <U>    ::= "-" <U> | <NM>
-// <NM>   ::= <IN> | <FL> | <SYM> | "(" <E> ")"
-// <IN>   ::= <digit+>
-// <FL>   ::= <digit+> "." <digit+>
+/// Parse terminals and construct an expression AST.
+let buildExpr
+    (tList: Terminal list)
+    (symbolTable: Map<string, NM>)
+    : BE * Terminal list =
+    // Parse boolean expressions.
+    // <BE>    ::= <BU> <BEopt> 
+    let rec parseBE tList : BE * Terminal list = 
+        let bu, tail = parseBU tList
+        let beopt, tail' = parseBEopt tail
+        (bu, beopt), tail'
+    // <BEopt> ::= "and" <BU> <BEopt> | "or" <BU> <BEopt> | <empty>
+    and parseBEopt tList : BEopt * Terminal list =
+        match tList with
+        | AndT :: tail ->
+            let bu, tail' = parseBU tail
+            let beopt, tail'' = parseBEopt tail'
+            And (bu, beopt), tail''
+        | OrT :: tail ->
+            let bu, tail' = parseBU tail
+            let beopt, tail'' = parseBEopt tail'
+            Or (bu, beopt), tail''
+        | _ -> EmptyBE, tList
 
-// Updated Grammar 6 in BNF: ( TBC )
-//
-// STATEMENTS
-// <STA>    ::= ( <ASN> | <DEF> | <CAL> ) ";"
-//            | <STA> <STA>
-//            | <empty>
-// <ASN>    ::= "let" <SYM> "=" <E>                                // Where not reserved variable.
-//            | <SYM> "++"                                         // Where var exists in symbol table.
-//            | <SYM> "--"                                         // Where var exists in symbol table.
-// <DEF>    ::= "def" <SYM> "(" <DEFopt> ")" "{" <STA> "}"         // Where not reserved.
-// <DEFopt> ::= <SYM> <DEFopt> | "," <DEFopt> | <empty>            // Where not reserved.
-// <CLL>    ::= <SYM> "(" <CLLopt> ")"                             // Where def exists in symbol table.
-// <CLLopt> ::= <NM> <CLLopt> | "," <CLLopt> | <empty>
-// <SYM>    ::= <alpha+>
-//
-// EXPRESSIONS
-// <E>      ::= <T> <Eopt>
-// <Eopt>   ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
-// <T>      ::= <P> <Topt>
-// <Topt>   ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
-// <P>      ::= <U> <Popt>
-// <Popt>   ::= "^" <U> <Popt> | <empty>
-// <U>      ::= "-" <U> | <NM>
-// <NM>     ::= <IN>
-//            | <FL>
-//            | <SYM>                                              // Where var exists in symbol table. 
-//            | <CLL>                                              // Where def exists in symbol table. 
-//            | "(" <E> ")"                  
-// <IN>     ::= <digit+>
-// <FL>     ::= <digit+> "." <digit+>
+    // Parse boolean unary.
+    // <BU>    ::= "!" <BU> | <BT> 
+    and parseBU tList : BU * Terminal list =
+        match tList with
+        | NotT :: tail ->
+            let bu, tail' = parseBU tail
+            Not bu, tail' 
+        | _ ->
+            let bt, tail = parseBT tList
+            BT bt, tail
 
-// STATEMENTS
-// STA    -> Statement
-// ASN    -> Assignment
-// PLT    -> Plot
-// PLTopt -> Plot
-// SYM    -> Symbol
-//
-// EXPRESSIONS
-// E      -> Expression
-// Eopt   -> Expression/Optional
-// T      -> Term
-// Topt   -> Term/Optional
-// P      -> Power
-// Popt   -> Power/Optional
-// U      -> Unary
-// NM     -> Number
-// IN     -> Integer
-// FL     -> Floating Point
-// CX     -> Complex Number
+    // Parse boolean terms.
+    // <BT>    ::= <E> <BTopt>
+    and parseBT tList : BT * Terminal list =
+        let e, tail = parseE tList
+        let btopt, tail' = parseBTopt tail
+        (e, btopt), tail'
+    // <BTopt> ::= "==" <E> <BTopt> | "!=" <E> <BTopt> | ">" <E> <BTopt> | "<" <E> <BTopt> | <empty>
+    and parseBTopt tList : BTopt * Terminal list =
+        match tList with
+        | EqlT :: tail ->
+            let e, tail' = parseE tail
+            let btopt, tail'' = parseBTopt tail'
+            Eql (e, btopt), tail''
+        | NEqlT :: tail ->
+            let e, tail' = parseE tail
+            let btopt, tail'' = parseBTopt tail'
+            NEql (e, btopt), tail''
+        | GrtT :: tail ->
+            let e, tail' = parseE tail
+            let btopt, tail'' = parseBTopt tail'
+            Grt (e, btopt), tail''
+        | LssT :: tail ->
+            let e, tail' = parseE tail
+            let btopt, tail'' = parseBTopt tail'
+            Lss (e, btopt), tail''
+        | _ -> EmptyBT, tList
 
+    // Parse expressions.
+    // <E>    ::= <T> <Eopt>
+    and parseE tList : E * Terminal list =
+        let u, tail = parseT tList
+        let popt, tail' = parseEopt tail
+        (u, popt), tail'
+    // <Eopt> ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+    and parseEopt tList : Eopt * Terminal list = 
+        match tList with
+        | AddT :: tail ->
+            let t, tail' = parseT tail
+            let eopt, tail'' = parseEopt tail'
+            Add (t, eopt), tail''
+        | SubT :: tail ->
+            let t, tail' = parseT tail
+            let eopt, tail'' = parseEopt tail'
+            Sub (t, eopt), tail''
+        | _ -> EmptyE, tList
 
-/// Parse expression tokens.
-let parseExpr
-    (tList: terminal list)
-    (symbolTable: Map<string, number>)
-    : terminal list =
-    // >> is forward function composition operator: let inline (>>) f g x = g(f x)
-    let rec E tList = (T >> Eopt) tList         
-    and Eopt tList = 
+    // Parse terms.
+    // <T>    ::= <P> <Topt>
+    and parseT tList : T * Terminal list =
+        let u, tail = parseP tList
+        let popt, tail' = parseTopt tail
+        (u, popt), tail'
+    // <Topt> ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
+    and parseTopt tList : Topt * Terminal list =
         match tList with
-        | Add :: tail -> (T >> Eopt) tail
-        | Sub :: tail -> (T >> Eopt) tail
-        | _ -> tList
-    and T tList = (P >> Topt) tList
-    and Topt tList =
-        match tList with
-        | Mul :: tail -> (P >> Topt) tail
-        | Div :: tail -> (P >> Topt) tail
-        | Mod :: tail -> (P >> Topt) tail
-        | _ -> tList
-    and P tList = (U >> Popt) tList
-    and Popt tList =
-        match tList with
-        | Pwr :: tail -> (U >> Popt) tail
-        | _ -> tList
-    and U tList =
-        match tList with
-        | Sub :: tail ->
-            let tail' = U tail
-            tail'
-        | _ -> NM tList
-    and NM tList =
-        match tList with
-        | Sym name :: tail ->
-            if name |> symbolTable.ContainsKey then tail
-            else $"Bad token: undefined symbol \"{name}\"" |> SyntaxError |> raise
-        | Num _ :: tail -> tail
-        | Lpar :: tail -> match E tail with 
-                          | Rpar :: tail -> tail
-                          | _ ->  "Bad token: Missing Parentheses \")\"" |> SyntaxError |> raise
-        | _ ->  "Bad token: Missing Operand" |> SyntaxError |> raise 
-    E tList
+        | MulT :: tail ->
+            let p, tail' = parseP tail
+            let topt, tail'' = parseTopt tail'
+            Mul (p, topt), tail''
+        | DivT :: tail ->
+            let p, tail' = parseP tail
+            let topt, tail'' = parseTopt tail'
+            Div (p, topt), tail''
+        | ModT :: tail ->
+            let p, tail' = parseP tail
+            let topt, tail'' = parseTopt tail'
+            Mod (p, topt), tail''
+        | _ -> EmptyT, tList
 
+    // Parse powers.
+    // <P>    ::= <U> <Popt>
+    and parseP tList: P * Terminal list = 
+        let u, tail = parseU tList
+        let popt, tail' = parsePopt tail
+        (u, popt), tail'
+    // <Popt> ::= "^" <U> <Popt> | <empty>
+    and parsePopt tList : Popt * Terminal list =
+        match tList with
+        | PwrT :: tail ->
+            let u, tail' = parseU tail
+            let popt, tail'' = parsePopt tail'
+            Pwr (u, popt), tail''
+        | _ -> EmptyP, tList
 
-/// Parse statement tokens.
-let parseStat
-    (tList: terminal list) 
-    (symbolTable: Map<string, number>) 
-    : terminal list * Map<string, number> =
-    let rec STA tList symbolTable =
+    // Parse unary.
+    // <U>    ::= "-" <U> | <NM>
+    and parseU tList : U * Terminal list =
         match tList with
-        | [] -> (tList, symbolTable)
-        | Sym s :: tail when s = assignSymbol -> ASN tail symbolTable
-        | Sym s :: tail when s = plotSymbol -> PLT tail symbolTable
-        | Sym s :: tail when s = printSymbol -> PRT tail symbolTable
-        //| Sym s :: _ -> $"Undefined statement '{s}'" |> SyntaxError |> raise
-        //| _ :: _ -> $"Bad token: Expecting statement symbol" |> SyntaxError |> raise
-        | _ :: _ -> PRT tList symbolTable // Print top level expressions.
-    
-    and ASN tList symbolTable =
+        | SubT :: tail ->
+            let u, tail' = parseU tail
+            Neg u, tail'
+        | _ ->
+            let nm, tail = parseNMvl tList
+            NM nm, tail
+
+    // Parse numbers and values.
+    // <NM>    ::= <VL> | <SYM> | "(" <E> ")"
+    // <VL>    ::= <IN> | <FL>
+    // <IN>    ::= <digit+>
+    // <FL>    ::= <digit+> "." <digit+>
+    and parseNMvl tList : NM * Terminal list =
         match tList with
-        | Sym name :: Eql :: tail ->
-            if Set.contains name reservedSymbols then
-                $"Attempted to define reserved symbol '{name}' as a variable" |> SyntaxError |> raise 
-            let tail' = parseExpr tail symbolTable
+        | SymT name :: tail ->
+            if name |> symbolTable.ContainsKey then Sym name, tail
+            else $"Undefined symbol \"{name}\"" |> SyntaxError |> raise
+        | IntT n :: tail -> Val (Int n), tail
+        | FltT n :: tail -> Val (Flt n), tail
+        | LparT :: tail ->
+            let be, tail' = parseBE tail
             match tail' with
-            | Semi :: tail'' ->
-                // Set all variables to 0 since they aren't being truely evaluated.
-                let symbolTable' = Map.add name (Flt 0) symbolTable
-                STA tail'' symbolTable'
-            | _ -> "Expected ';' after assignment" |> SyntaxError |> raise
-        | _ -> "Expected symbol and '=' after 'let'" |> SyntaxError |> raise
-    
-    and PLT tList symbolTable =
-        let tail = parseExpr tList symbolTable
-        PLTopt tail symbolTable
-
-    and PLTopt tList symbolTable =
-        match tList with
-        | Cma :: tail ->
-            let tail' = parseExpr tail symbolTable
-            PLTopt tail' symbolTable
-        | Semi :: tail ->
-            STA tail symbolTable
-        | _ -> "Expected ',' or ';' in plot statement" |> SyntaxError |> raise
-    
-    and PRT tList symbolTable =
-        let tail = parseExpr tList symbolTable
-        match tail with
-        | Semi :: tail' -> STA tail' symbolTable
-        | _ -> "Expected ';' after print statement" |> SyntaxError |> raise
-    
-    STA tList symbolTable
-
+            | RparT :: tail'' -> BE be, tail''
+            | _ ->  "Missing Parentheses \")\"" |> SyntaxError |> raise
+        // Any unexpected operands eventually trickle down to here.
+        | _ ->  "Unexpected Operand" |> SyntaxError |> raise 
+    parseBE tList
 
 /// Typecast any IN values to FL values if either is a FL for binops.
-let promoteNum lhs rhs : number * number =
+let promote lhs rhs : VL * VL =
     match lhs, rhs with
     | Int lhs, Int rhs -> Int lhs, Int rhs
     | Int lhs, Flt rhs -> Flt (float lhs), Flt rhs
     | Flt lhs, Int rhs -> Flt lhs, Flt (float rhs)
     | Flt lhs, Flt rhs -> Flt lhs, Flt rhs
 
+// Evaluate expressions.
+let evalExpr
+    (expr: BE)
+    (symbolTable: Map<string, NM>)
+    : VL =
+    // Evaluate boolean expressions.
+    // <BE>    ::= <BU> <BEopt>
+    let rec evalBE ((bu, beopt): BE) (symbolTable: Map<string, NM>) : VL =
+        let buVal = evalBU bu symbolTable
+        evalBEopt beopt buVal symbolTable
+    // <BEopt> ::= "and" <BU> <BEopt> | "or" <BU> <BEopt> | <empty>
+    and evalBEopt (beopt: BEopt) (lhsBU: VL) (symbolTable: Map<string, NM>) : VL =
+        match beopt with
+        | And (rhsBU, beopt') ->
+            let rhsBU' = evalBU rhsBU symbolTable // Evaluate RHS boolean unary; Evaluate next BEopt.
+            match promote lhsBU rhsBU' with
+            | Int lhs, Int rhs -> evalBEopt beopt' (Int (if lhs <> 0 && rhs <> 0 then 1 else 0)) symbolTable
+            | Flt lhs, Flt rhs -> evalBEopt beopt' (Flt (if lhs <> 0.0 && rhs <> 0.0 then 1.0 else 0.0)) symbolTable
+            | _ -> "Bad evaluation: Cannot AND different types" |> RuntimeError |> raise 
+        | Or (rhsBU, beopt') ->
+            let rhsBU' = evalBU rhsBU symbolTable
+            match promote lhsBU rhsBU' with
+            | Int lhs, Int rhs -> evalBEopt beopt' (Int (if lhs <> 0 || rhs <> 0 then 1 else 0)) symbolTable
+            | Flt lhs, Flt rhs -> evalBEopt beopt' (Flt (if lhs <> 0.0 || rhs <> 0.0 then 1.0 else 0.0)) symbolTable
+            | _ -> "Bad evaluation: Cannot OR different types" |> RuntimeError |> raise 
+        | EmptyBE -> lhsBU
+        
+    // Evaluate boolean unary.
+    // <BU>    ::= "!" <BU> | <BT>
+    and evalBU (bu: BU) (symbolTable: Map<string, NM>) : VL =
+        match bu with
+        | Not bu' -> match evalBU bu' symbolTable with
+                     | Int buVal -> if buVal <> 0 then Int 1 else Int 0
+                     | Flt buVal -> if buVal <> 0 then Flt 1.0 else Flt 0.0
+        | BT bt -> evalBT bt symbolTable
 
-/// Parse and evaluate expressions.
-let parseNevalExpr
-    (tList: terminal list) // Token list
-    (symbolTable: Map<string, number>) // Symbol table
-    : terminal list * number = 
-    let rec E tList = (T >> Eopt) tList
-    and Eopt (tList, value) = 
-        match tList with
-        | Add :: tail -> let tList', tVal = T tail
-                         match promoteNum value tVal with
-                         | Int value', Int tVal' -> Eopt(tList', Int (value' + tVal'))
-                         | Flt value', Flt tVal' -> Eopt(tList', Flt (value' + tVal'))
-                         | _ -> "Bad evaluation: Cannot ADD different types" |> RuntimeError |> raise 
-        | Sub :: tail -> let tList', tVal = T tail
-                         match promoteNum value tVal with
-                         | Int value', Int tVal' -> Eopt(tList', Int (value' - tVal'))
-                         | Flt value', Flt tVal' -> Eopt(tList', Flt (value' - tVal'))
-                         | _ -> "Bad evaluation: Cannot SUB different types" |> RuntimeError |> raise
-        | _ -> (tList, value)
-    and T tList = (P >> Topt) tList
-    and Topt (tList, value) =
-        match tList with
-        | Mul :: tail -> let tList', tVal = P tail
-                         match promoteNum value tVal with
-                         | Int value', Int tVal' -> Topt(tList', Int (value' * tVal'))
-                         | Flt value', Flt tVal' -> Topt(tList', Flt (value' * tVal'))
-                         | _ -> "Bad evaluation: Cannot MUL different types" |> RuntimeError |> raise 
-        | Div :: tail -> let tList', tVal = P tail
-                         match promoteNum value tVal with
-                         // F# evaluates floating point division by 0 as infinity, so we must manually catch this.
-                         | Int _, Int 0 | Flt _, Flt 0.0 -> "Attempted to divide by zero" |> DivideByZeroException |> raise 
-                         | Int value', Int tVal' -> Topt(tList', Flt ((float value') / (float tVal'))) // Force a promotion.
-                         | Flt value', Flt tVal' -> Topt(tList', Flt (value' / tVal'))
-                         | _ -> "Bad evaluation: Cannot DIV different types" |> RuntimeError |> raise 
-        | Mod :: tail -> let tList', tVal = P tail
-                         // F# evaluates floating point division by 0 as infinity, so we must manually catch this.
-                         match promoteNum value tVal with
-                         | Int _, Int 0 | Flt _, Flt 0.0 -> "Attempted to divide by zero" |> DivideByZeroException |> raise 
-                         | Int value', Int tVal' -> Topt(tList', Int (value' % tVal'))
-                         | Flt value', Flt tVal' -> Topt(tList', Flt (value' % tVal'))
-                         | _ -> "Bad evaluation: Cannot MOD different types" |> RuntimeError |> raise 
-        | _ -> (tList, value)
-    and P tList = (U >> Popt) tList
-    and Popt (tList, value) =
-        match tList with
-        | Pwr :: tail -> let tList', tVal = U tail
-                         match promoteNum value tVal with
-                         | Int value', Int tVal' -> Popt(tList', Int (pown value' tVal'))
-                         | Flt value', Flt tVal' -> Popt(tList', Flt (value' ** tVal'))
-                         | _ -> "Bad evaluation: Cannot POW different types" |> RuntimeError |> raise 
-        | _ -> (tList, value)
-    and U tList =
-        match tList with
-        | Sub :: tail -> let tList', tVal = U tail
-                         match tVal with
-                         | Int tVal' -> (tList', Int -tVal')
-                         | Flt tVal' -> (tList', Flt -tVal')
-        | _ -> NM tList
-    and NM tList = // Superset of IN, FL, CX
-        match tList with 
-        | Num value :: tail -> (tail, value)
-        | Sym name :: tail ->
-            if name |> symbolTable.ContainsKey then (tail, symbolTable[name])
-            else $"Bad token: undefined symbol \"{name}\"" |> RuntimeError |> raise
-        | Lpar :: tail -> let tList', tVal = E tail
-                          match tList' with 
-                          | Rpar :: tail -> (tail, tVal)
-                          | _ -> "Bad token: Missing Parentheses" |> SyntaxError |> raise
-        | _ -> "Bad token: Missing Operand" |> SyntaxError |> raise
-    E tList
+    // Evaluate boolean terms.
+    // <BT>    ::= <E> <BTopt>
+    and evalBT ((e, btopt): BT) (symbolTable: Map<string, NM>) : VL = 
+        let eVal = evalE e symbolTable
+        evalBTopt btopt eVal symbolTable
+    // <BTopt> ::= "==" <E> <BTopt> | "!=" <E> <BTopt> | ">" <E> <BTopt> | "<" <E> <BTopt> | <empty>
+    and evalBTopt (btopt: BTopt) (lhsE: VL) (symbolTable: Map<string, NM>) : VL =
+        match btopt with
+        | Eql (rhsE, btopt') ->
+            let rhsE' = evalE rhsE symbolTable // Evaluate RHS boolean term; Evaluate next BTopt.
+            match promote lhsE rhsE' with
+            | Int lhs, Int rhs -> evalBTopt btopt' (Int (if lhs = rhs then 1 else 0)) symbolTable
+            | Flt lhs, Flt rhs -> evalBTopt btopt' (Flt (if lhs = rhs then 1.0 else 0.0)) symbolTable
+            | _ -> "Bad evaluation: Cannot EQL different types" |> RuntimeError |> raise 
+        | NEql (rhsE, btopt') ->
+            let rhsE' = evalE rhsE symbolTable // Evaluate RHS boolean term; Evaluate next BTopt.
+            match promote lhsE rhsE' with
+            | Int lhs, Int rhs -> evalBTopt btopt' (Int (if lhs <> rhs then 1 else 0)) symbolTable
+            | Flt lhs, Flt rhs -> evalBTopt btopt' (Flt (if lhs <> rhs then 1.0 else 0.0)) symbolTable
+            | _ -> "Bad evaluation: Cannot EQL different types" |> RuntimeError |> raise 
+        | Grt (rhsE, btopt') ->
+            let rhsE' = evalE rhsE symbolTable // Evaluate RHS boolean term; Evaluate next BTopt.
+            match promote lhsE rhsE' with
+            | Int lhs, Int rhs -> evalBTopt btopt' (Int (if lhs > rhs then 1 else 0)) symbolTable
+            | Flt lhs, Flt rhs -> evalBTopt btopt' (Flt (if lhs > rhs then 1.0 else 0.0)) symbolTable
+            | _ -> "Bad evaluation: Cannot EQL different types" |> RuntimeError |> raise 
+        | Lss (rhsE, btopt') ->
+            let rhsE' = evalE rhsE symbolTable // Evaluate RHS boolean term; Evaluate next BTopt.
+            match promote lhsE rhsE' with
+            | Int lhs, Int rhs -> evalBTopt btopt' (Int (if lhs < rhs then 1 else 0)) symbolTable
+            | Flt lhs, Flt rhs -> evalBTopt btopt' (Flt (if lhs < rhs then 1.0 else 0.0)) symbolTable
+            | _ -> "Bad evaluation: Cannot EQL different types" |> RuntimeError |> raise 
+        | EmptyBT -> lhsE
 
+    // Evaluate expressions.
+    // <E>    ::= <T> <Eopt>
+    and evalE ((t, eopt): E) (symbolTable: Map<string, NM>) : VL =
+        let tVal = evalT t symbolTable // Evaluate LHS term.
+        evalEopt eopt tVal symbolTable
+    // <Eopt> ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+    and evalEopt (eopt: Eopt) (lhsT: VL) (symbolTable: Map<string, NM>): VL = 
+       match eopt with
+       | Add (rhsT, eopt') ->
+           let rhsT' = evalT rhsT symbolTable // Evaluate RHS term; Evaluate next Eopt.
+           match promote lhsT rhsT' with
+           | Int lhs, Int rhs -> evalEopt eopt' (Int (lhs + rhs)) symbolTable
+           | Flt lhs, Flt rhs -> evalEopt eopt' (Flt (lhs + rhs)) symbolTable
+           | _ -> "Bad evaluation: Cannot ADD different types" |> RuntimeError |> raise 
+       | Sub (rhsT, eopt') ->
+           let rhsT' = evalT rhsT symbolTable // Evaluate RHS term; Evaluate next Eopt.
+           match promote lhsT rhsT' with
+           | Int lhs, Int rhs -> evalEopt eopt' (Int (lhs - rhs)) symbolTable
+           | Flt lhs, Flt rhs -> evalEopt eopt' (Flt (lhs - rhs)) symbolTable
+           | _ -> "Bad evaluation: Cannot ADD different types" |> RuntimeError |> raise 
+       | EmptyE -> lhsT
 
-/// Parse and evaluate statements.
-let parseNevalStat
-    (tList: terminal list) 
-    (symbolTable: Map<string, number>) 
-    (stdOut: System.IO.StringWriter)
-    : terminal list * Map<string, number> * number list list =
-    let rec STA tList symbolTable plotTable =
+    // Evaluate terms.
+    // <T>    ::= <P> <Topt>
+    and evalT ((p, topt): T) (symbolTable: Map<string, NM>) : VL =
+        let pVal = evalP p symbolTable // Evaluate LHS power.
+        evalTopt topt pVal symbolTable
+    // <Topt> ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
+    and evalTopt (topt: Topt) (lhsP: VL) (symbolTable: Map<string, NM>): VL = 
+       match topt with
+       | Mul (rhsP, topt') ->
+           let rhsP' = evalP rhsP symbolTable // Evaluate RHS power; Evaluate next Topt.
+           match promote lhsP rhsP' with
+           | Int lhs, Int rhs -> evalTopt topt' (Int (lhs * rhs)) symbolTable
+           | Flt lhs, Flt rhs -> evalTopt topt' (Flt (lhs * rhs)) symbolTable
+           | _ -> "Bad evaluation: Cannot MUL different types" |> RuntimeError |> raise 
+       | Div (rhsP, topt') ->
+           let rhsP' = evalP rhsP symbolTable // Evaluate RHS power; Evaluate next Topt.
+           match promote lhsP rhsP' with
+           // F# evaluates floating point division by 0 as infinity, so we must manually catch this.
+           | Int _, Int 0 | Flt _, Flt 0.0 -> "Attempted to divide by zero" |> DivideByZeroException |> raise 
+           | Int lhs, Int rhs -> evalTopt topt' (Int (lhs / rhs)) symbolTable
+           | Flt lhs, Flt rhs -> evalTopt topt' (Flt (lhs / rhs)) symbolTable
+           | _ -> "Bad evaluation: Cannot DIV different types" |> RuntimeError |> raise 
+       | Mod (rhsP, topt') ->
+           let rhsP' = evalP rhsP symbolTable // Evaluate RHS power; Evaluate next Topt.
+           match promote lhsP rhsP' with
+           // F# evaluates floating point division by 0 as infinity, so we must manually catch this.
+           | Int _, Int 0 | Flt _, Flt 0.0 -> "Attempted to divide by zero" |> DivideByZeroException |> raise 
+           | Int lhs, Int rhs -> evalTopt topt' (Int (lhs % rhs)) symbolTable
+           | Flt lhs, Flt rhs -> evalTopt topt' (Flt (lhs % rhs)) symbolTable
+           | _ -> "Bad evaluation: Cannot MOD different types" |> RuntimeError |> raise 
+       | EmptyT -> lhsP
+
+    // Evaluate powers.
+    // <P>    ::= <U> <Popt>
+    and evalP ((u, popt): P) (symbolTable: Map<string, NM>) : VL =
+        let uVal = evalU u symbolTable // Evaluate LHS unary.
+        evalPopt popt uVal symbolTable
+    // <Popt> ::= "^" <U> <Popt> | <empty>
+    and evalPopt (popt: Popt) (lhsU: VL) (symbolTable: Map<string, NM>): VL = 
+       match popt with
+        | Pwr (rhsU, popt') ->
+            let rhsU' = evalU rhsU symbolTable // Evaluate RHS unary; Evaluate next Topt.
+            match promote lhsU rhsU' with
+            | Int lhs, Int rhs -> evalPopt popt' (Int (pown lhs rhs)) symbolTable
+            | Flt lhs, Flt rhs -> evalPopt popt' (Flt (lhs ** rhs)) symbolTable
+            | _ -> "Bad evaluation: Cannot POW different types" |> RuntimeError |> raise 
+        | EmptyP -> lhsU
+
+    // Evaluate unary.
+    // <U>    ::= "-" <U> | <NM>
+    and evalU (u: U) (symbolTable: Map<string, NM>) : VL =
+        match u with
+        | Neg u' -> match evalU u' symbolTable with // Evaluate next unary.
+                    | Int uVal' -> Int -uVal'
+                    | Flt uVal' -> Flt -uVal'
+        | NM nm -> evalNMvl nm symbolTable // Evaluate final number.
+
+    // Evaluate numbers and value literals.
+    // <NM>    ::= <VL> | <SYM> | "(" <E> ")"
+    // <VL>    ::= <IN> | <FL>
+    // <IN>    ::= <digit+>
+    // <FL>    ::= <digit+> "." <digit+>
+    and evalNMvl (nm: NM) (symbolTable: Map<string, NM>) : VL =
+        match nm with 
+        | Val value -> value // Evaluate VL
+        | Sym name -> 
+            if name |> symbolTable.ContainsKey
+            then evalNMvl symbolTable[name] symbolTable
+            // This should be impossible. Undefined symbol should be caught during AST build.
+            else $"Undefined symbol \"{name}\"" |> SyntaxError |> raise
+        | BE expr -> evalBE expr symbolTable
+    evalBE expr symbolTable
+
+// Parse terminal and construct a program AST.
+let rec buildProgram
+    (tList: Terminal list)
+    (symbolTable: Map<string, NM>)
+    : PROG * Terminal list * Map<string, NM> =
+    // Parse program.
+    // <PROG>  ::= <STA> <PROG> | <empty>
+    let rec parsePROG (tList: Terminal list) (symbolTable: Map<string, NM>) : PROG * Terminal list * Map<string, NM> =
         match tList with
-        | [] -> (tList, symbolTable, plotTable)
-        | Sym s :: tail when s = assignSymbol -> ASN tail symbolTable plotTable
-        | Sym s :: tail when s = plotSymbol -> PLT tail symbolTable plotTable
-        | Sym s :: tail when s = printSymbol -> PRT tail symbolTable plotTable
-        //| Sym s :: _ -> $"Undefined statement '{s}'" |> SyntaxError |> raise
-        //| _ :: _ -> $"Bad token: Expecting statement symbol" |> SyntaxError |> raise
-        | _ :: _ -> PRT tList symbolTable plotTable // Print top level expressions.
-    
-    and ASN tList symbolTable plotTable =
+        | RcurlT :: _ -> (EmptyPROG, tList, symbolTable) // End of block.
+        | [] -> (EmptyPROG, tList, symbolTable) // EOF.
+        | _ :: _ -> // Parse current statement; parse next statement.
+            let sta, tList', symbolTable' = parseSTA tList symbolTable
+            let nextProg, tList'', symbolTable'' = parsePROG tList' symbolTable' 
+            Stat (sta, nextProg), tList'', symbolTable''
+
+    // Parse statements.
+    // <STA>   ::= <WHL> | <IF> | <ASN> | <PLT> | <PRT>
+    and parseSTA (tList: Terminal list) (symbolTable: Map<string, NM>) : STA * Terminal list * Map<string, NM> =
         match tList with
-        |  Sym name :: Eql :: tail ->
-            let tail', value = parseNevalExpr tail symbolTable
+        | SymT s :: tail when s = loopSymbol -> // Parse loop statement.
+            let whl, tail', symbolTable' = parseWHL tail symbolTable
+            (While whl), tail', symbolTable'
+        | SymT s :: tail when s = ifSymbol -> // Parse if statement.
+            let ifs, tail', symbolTable' = parseIF tail symbolTable
+            (If ifs), tail', symbolTable'
+        | SymT s :: _ when (s = assignSymbol || s = functionSymbol ) -> // Parse assignment statement.
+            let asn, tail, symbolTable' = parseASN tList symbolTable
+            (Assign asn), tail, symbolTable'
+        | SymT s :: tail when s = plotSymbol -> // Parse plot statement.
+            let plt, tail' = parsePLT tail symbolTable 
+            (Plot plt), tail', symbolTable
+        | SymT s :: tail when s = printSymbol -> // Parse print statement.
+            let prt, tail' = parsePRT tail symbolTable 
+            (Print prt), tail', symbolTable
+        //| SymT s :: _ -> $"Undefined statement '{s}'" |> SyntaxError |> raise
+        | [] -> "Bad : Expecting statement symbol" |> RuntimeError |> raise
+        | _ -> // Attempt to parse top level expressions as a print statement.
+            let prt, tail' = parsePRT tList symbolTable 
+            (Print prt), tail', symbolTable
+
+    // Parse loops.
+    // <WHL>   ::= "while" <BE> "{" <PROG> "}"
+    and parseWHL (tList: Terminal list) (symbolTable: Map<string, NM>) : WHL * Terminal list * Map<string, NM> =
+        let expr, tList' = buildExpr tList symbolTable
+        match tList' with
+        | LcurlT :: tail ->
+            let block, tail', symbolTable' = parsePROG tail symbolTable
             match tail' with
-            | Semi :: tail'' ->
-                let symbolTable' = Map.add name value symbolTable
-                STA tail'' symbolTable' plotTable
-            | _ -> "Expected ';' after assignment" |> SyntaxError |> raise
-        | _ -> "Expected symbol and '=' after 'let'" |> SyntaxError |> raise
-    
-    and PLT tList symbolTable plotTable =
-        let tail, value = parseNevalExpr tList symbolTable
-        PLTopt tail symbolTable plotTable [value]
-    
-    and PLTopt tList symbolTable plotTable polynomial =
+            | RcurlT :: tail'' ->
+                ((expr, block), tail'', symbolTable')
+            | _ -> "Unmatched '{'." |> SyntaxError |> raise
+        | _ -> "Expecting '{' after 'while'." |> SyntaxError |> raise
+
+    // Parse ifs.
+    // <IF>    ::= "if" <BE> "{" <PROG> "}"
+    and parseIF (tList: Terminal list) (symbolTable: Map<string, NM>) : IF * Terminal list * Map<string, NM> =
+        let expr, tList' = buildExpr tList symbolTable
+        match tList' with
+        | LcurlT :: tail ->
+            let block, tail', symbolTable' = parsePROG tail symbolTable
+            match tail' with
+            | RcurlT :: tail'' ->
+                ((expr, block), tail'', symbolTable')
+            | _ -> "Unmatched '{'." |> SyntaxError |> raise
+        | _ -> "Expecting '{' after 'if'." |> SyntaxError |> raise
+
+    // Parse assignments.
+    // <ASN>   ::= "let" <SYM> "=" <BE> ";" | "func" <SYM> "=" <BE> ";">
+    and parseASN (tList: Terminal list) (symbolTable: Map<string, NM>) : ASN * Terminal list * Map<string, NM> =
         match tList with
-        | Cma :: tail ->
-            let tail', value = parseNevalExpr tail symbolTable
-            PLTopt tail' symbolTable plotTable (polynomial @ [value])
-        | Semi :: tail ->
-            STA tail symbolTable (plotTable @ [polynomial])
-        | _ -> "Expected ',' or ';' in plot statement" |> SyntaxError |> raise
-    
-    and PRT tList symbolTable plotTable =
-        let tail, value = parseNevalExpr tList symbolTable
+        | SymT keyword :: tail when keyword = assignSymbol ->
+            match tail with
+            | SymT name :: SetT :: tail' ->
+                let expr, tail'' = buildExpr tail' symbolTable
+                match tail'' with
+                | SemiT :: tail''' ->
+                    let symbolTable' = Map.add name (Val (Int 0)) symbolTable // Init an empty value.
+                    Var (name, expr), tail''', symbolTable'
+                | _ -> "Expected ';' after assignment" |> SyntaxError |> raise
+            | _ -> "Expected symbol and '=' after 'let'" |> SyntaxError |> raise
+        | SymT keyword :: tail when keyword = functionSymbol ->
+            match tail with
+            | SymT name :: SetT :: tail' ->
+                let expr, tail'' = buildExpr tail' symbolTable
+                match tail'' with
+                | SemiT :: tail''' ->
+                    let symbolTable' = Map.add name (Val (Int 0)) symbolTable // Init an empty value.
+                    Func (name, expr), tail''', symbolTable'
+                | _ -> "Expected ';' after assignment" |> SyntaxError |> raise
+            | _ -> "Expected symbol and '=' after 'func'" |> SyntaxError |> raise
+        | _ -> "Bad token: Expecting assignment statement symbol" |> RuntimeError |> raise
+
+    // Parse plots.
+    // <PLT>   ::= "plot" <E> ";"
+    and parsePLT (tList: Terminal list) (symbolTable: Map<string, NM>) : PLT * Terminal list =
+        let expr, tail = buildExpr tList symbolTable
         match tail with
-        | Semi :: tail' ->
-            let timeStr = DateTime.Now.ToString("hh:mm:ss")
-            stdOut.WriteLine($"{timeStr} | {value}")
-            STA tail' symbolTable plotTable
-        | _ -> "Expected ';' after print statement" |> SyntaxError |> raise
+        | SemiT :: tail' ->
+            expr, tail'
+        | _ -> "Expected ';' after plot" |> SyntaxError |> raise
     
-    STA tList symbolTable []
+    // Parse prints.
+    // <PRT>   ::= "print" <E> ";" | <E> ";"
+    and parsePRT (tList: Terminal list) (symbolTable: Map<string, NM>) : PRT * Terminal list =
+        let expr, tail = buildExpr tList symbolTable
+        match tail with
+        | SemiT :: tail' ->
+            expr, tail'
+        | _ -> "Expected ';' after plot" |> SyntaxError |> raise
 
+    parsePROG tList symbolTable
 
-/// Wrapper function for parseNexec to help C# interop.
-let parseNevalStatCSharp
-    (tList: terminal list) 
-    (symbolTable: Map<string, number>) 
+// Determine if a VL is true or false by comparing to a zero value.
+let isTrue = function
+    | Int v -> v <> 0
+    | Flt v -> v <> 0.0
+
+// Execute constructed ASTs.
+let executeProgram
+    (program: PROG)
+    (symbolTable: Map<string, NM>)
     (stdOut: System.IO.StringWriter)
-    : Map<string, number> * number array array =
-    let _, symbolTable', plotTable = parseNevalStat tList symbolTable stdOut
-    // Convert plotTable to arrays rather than lists.
-    (symbolTable', plotTable |> List.map List.toArray |> List.toArray)
- 
+    (plotXmin: float)
+    (plotXmax: float)
+    (plotXstep: float)
+    : Map<string, NM> * VL list list =
+    // Execute program.
+    // <PROG>  ::= <STA> <PROG> | <empty>
+    let rec execPROG (prog: PROG) (symbolTable: Map<string, NM>) (plotTable: VL list list) : Map<string, NM> * VL list list =
+        match prog with
+        | Stat (sta, nextProg) -> // Execute current statement; execute next statement.
+            let symbolTable', plotTable' = execSTA sta symbolTable plotTable
+            execPROG nextProg symbolTable' plotTable' 
+        | EmptyPROG -> // EOF
+            symbolTable, plotTable
+    
+    // Execute statements.
+    // <STA>   ::= <WHL> | <IF> | <ASN> | <PLT> | <PRT>
+    and execSTA (sta: STA) (symbolTable: Map<string, NM>) (plotTable: VL list list) : Map<string, NM> * VL list list =
+        match sta with
+        | While whl -> // Execute loop.
+            execWHL whl symbolTable plotTable
+        | If ifs -> // Execute conditional.
+            execIF ifs symbolTable plotTable
+        | Assign asn -> // Execute assignment.
+            (execASN asn symbolTable), plotTable
+        | Plot plt -> // Execute plot.
+            symbolTable, (execPLT plt symbolTable plotTable)
+        | Print prt -> // Execute assignment.
+            (execPRT prt symbolTable)
+            symbolTable, plotTable
+
+    // Execute loops.
+    // <WHL>   ::= "while" <BE> "{" <PROG> "}"
+    and execWHL ((be, prog): WHL) (symbolTable: Map<string, NM>) (plotTable: VL list list) : Map<string, NM> * VL list list =
+        let value = evalExpr be symbolTable
+        if isTrue value
+        then let symbolTable', plotTable' = execPROG prog symbolTable plotTable
+             execWHL (be, prog) symbolTable' plotTable'
+        else symbolTable, plotTable
+
+    // Execute ifs.
+    // <IF>    ::= "if" <BE> "{" <PROG> "}"
+    and execIF ((be, prog): IF) (symbolTable: Map<string, NM>) (plotTable: VL list list) : Map<string, NM> * VL list list =
+        let value = evalExpr be symbolTable
+        if isTrue value
+        then execPROG prog symbolTable plotTable
+        else symbolTable, plotTable
+
+    // Execute assignments.
+    // <ASN>   ::= "let" <SYM> "=" <BE> ";" | "func" <SYM> "=" <BE> ";"
+    and execASN (asn: ASN) (symbolTable: Map<string, NM>) : Map<string, NM> =
+         match asn with
+         | Func (symbol, be) ->
+            Map.add symbol (BE be) symbolTable // Add expression to symbol table.
+         | Var (symbol, be) ->
+            let value = evalExpr be symbolTable
+            Map.add symbol (Val value) symbolTable // Evaluate expression and add to symbol table.
+
+    // Execute plots.
+    // <PLT>   ::= "plot" <E> ";"
+    and execPLT (e: PLT) (symbolTable: Map<string, NM>) (plotTable: VL list list) : VL list list =
+        let yValues = 
+            [ for x in plotXmin .. plotXstep .. plotXmax -> // Calculate Y points by injecting an X value for each step.
+                let tempTable = Map.add "x" (Val (Flt x)) symbolTable
+                evalExpr e tempTable ]
+        let timeStr = DateTime.Now.ToString("hh:mm:ss")
+        stdOut.WriteLine($"{timeStr} | Plotting line {plotTable.Length}")
+        plotTable @ [yValues]
+        
+    // Execute prints.
+    // <PRT>   ::= "print" <E> ";" | <E> ";"
+    and execPRT (e: PRT) (symbolTable: Map<string, NM>) : unit =
+        let value = evalExpr e symbolTable
+        let timeStr = DateTime.Now.ToString("hh:mm:ss")
+        stdOut.WriteLine($"{timeStr} | {value}") // Evaluate and write to IO writer.
+    execPROG program symbolTable []
 
 /// Prints token list
-let rec printTList (lst:list<terminal>) : list<string> = 
+let rec printTList (lst:list<Terminal>) : list<string> = 
     match lst with
     head::tail -> Console.Write("{0} ",head.ToString())
                   printTList tail
     | [] -> Console.Write("EOL\n")
             []
 
-
 [<EntryPoint>]
 let main _  =
-    Console.WriteLine("Simple Interpreter")
-    let stdOut = new System.IO.StringWriter();
-    let input:string = getInputString()
-    let oList = lexer input
-    parseStat oList Map.empty |> ignore
-    printTList oList |> ignore
-    let _, symbolTable', plotTable = parseNevalStat oList Map.empty stdOut
-    Console.WriteLine($"Symbol Table: {symbolTable'}")
-    Console.WriteLine($"Plot Table: {plotTable}")
-    Console.WriteLine(stdOut.ToString())
-    0
+     Console.WriteLine("Simple Interpreter")
+     let stdOut = new System.IO.StringWriter()
+     let input:string = getInputString()
+     let tList = lexer input // Lex input.
+     printTList tList |> ignore
+     let symbolTable = Map.add "x" (Val (Int 0)) Map.empty // Initialise a special xs
+     let ast, _, _ = buildProgram tList symbolTable // Build AST from lexed input.
+     let symbolTable', plotTable = executeProgram ast symbolTable stdOut -10.0 10.0 0.1 // Execute AST.
+     Console.WriteLine($"Final Symbol Table: {symbolTable'}")
+     Console.WriteLine($"Plot Table: {plotTable}")
+     Console.WriteLine(stdOut.ToString())
+     0
