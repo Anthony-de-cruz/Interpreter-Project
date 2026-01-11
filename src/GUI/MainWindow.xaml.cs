@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using Microsoft.FSharp.Collections;
 using Microsoft.Win32;
 using OxyPlot;
 using OxyPlot.Axes;
@@ -189,38 +188,24 @@ public partial class MainWindow
     /// <param name="e"></param>
     private void RunButton_Click(object sender, RoutedEventArgs e)
     {
-        StringWriter stdOut = new();
-        FSharpList<Microsoft.FSharp.Collections.FSharpList<Interpreter.VL>> fsPlotTable;
+        if (ExprTextBox.Text.Length > 0) return;
+        
+        StringWriter stdOut = new StringWriter();
+        double[][] plotArray;
         try
         {
-            // Run interpreter.
-            FSharpList<Interpreter.Terminal> lexed = Interpreter.lexer(ExprTextBox.Text);
-            Interpreter.PROG ast = Interpreter.buildProgram(lexed,
-                MapModule.Empty<string, Interpreter.NM>()
-                    .Add("x",  Interpreter.NM.NewVal(Interpreter.VL.NewFlt(0)))).Item1;
-            fsPlotTable = Interpreter.executeProgram(ast,
-                MapModule.Empty<string, Interpreter.NM>()
-                    .Add("x",  Interpreter.NM.NewVal(Interpreter.VL.NewFlt(0))), stdOut, _minimumX, _maximumX, _step).Item2;
+            plotArray = InterpreterController.Execute(
+                ExprTextBox.Text,
+                _minimumX,
+                _maximumX,
+                _step,
+                stdOut);
         }
         catch (Exception ex)
         {
             OutputTextBox.Foreground = Brushes.Red;
             OutputTextBox.Text = ex.ToString();
             return;
-        }
-
-        // Convert F# array to C# array.
-        double[][] plotArray = new double[fsPlotTable.Length][];
-        for (int i = 0; i < fsPlotTable.Length; i++)
-        {
-            plotArray[i] = new double[fsPlotTable[i].Length];
-            for (int j = 0; j < fsPlotTable[i].Length; j++)
-            {
-                if (fsPlotTable[i][j].IsInt)
-                    plotArray[i][j] = ((Interpreter.VL.Int)fsPlotTable[i][j]).Item;
-                else if (fsPlotTable[i][j].IsFlt)
-                    plotArray[i][j] = ((Interpreter.VL.Flt)fsPlotTable[i][j]).Item;
-            }
         }
 
         // Display stdOut.
