@@ -254,64 +254,238 @@ Note that code snippets or lists of crucial programming code or large UML diagra
 
 \subsection{Testing}
 
-Describe what testing you have done on the interpreter (lexer, parser and execution), GUI and GUI-Interpreter communication, plotting, etc. Table \ref{Table2} in Appendix \ref{app:test} should be completed to do basic arithmetic expression tests.
+Extensive unit testing as been written for all aspects of the interpreter.
 
+Describe what testing you have done on the interpreter (lexer, parser and execution), GUI and GUI-Interpreter communication, plotting, etc. Table \ref{Table2} in Appendix \ref{app:test} should be completed to do basic arithmetic expression tests.
 
 \chapter{Discussion, conclusion and future work}
 
 Briefly discuss  your achievements and put them in perspective with the MoSCoW analysis you specified in Table \ref{Table1}. Also discuss future developments and how you see the deliverable improving if more time could be spent. Note that this section should not be used as a medium to vent frustrations on whatever did not work out (group issues, not enough time, illness, etc.) as this should be dealt with separately - keep it professional!
 
-
 \bibliographystyle{apalike}
-%\raggedright
 \bibliography{References}
-
 
 \appendix
 \chapter{Contributions}
 
-State here the \% contribution to the project of each individual member of the group and describe in brief what each member has done (if this corresponds to particular sections in the report then please specify these).
+\section{Individual Contributions}
+
+\begin{table}[H]
+\begin{tabular}{|p{1.2in}|p{1.2in}|} \hline
+Name & Contribution \\ \hline
+Anthony de Cruz & 50\% \\ \hline
+Mason Buckle & 50\% \\ \hline
+\end{tabular}
+\label{TableContribution}
+\end{table}
+
+Both members equally contributed to the project. We both worked on designing the application/BNF in equal time as well as performing testing of the application. Anthony developed most of the F\# interpreter and Mason developed the plotting and GUI in C\#. This complete report was also written in equal parts by both members with Mason writing chapters 1, 2 and 3 and Anthony writing chapters 4 and 5.
 
 \chapter{Testing}
 \label{app:test}
 \section{Arithmetic expression testing}
 
-\begin{table}[h]
-\caption{Arithmetic expression tests. Note that floating pointing values are accurate to three decimal places for the fractional part. ResE is expected result and ResA is actual result.  NOTE that this can definitely be extended with more tests!\\}
-\begin{tabular}{|p{1.8in}|p{0.5in}|p{0.4in}|p{0.6in}|p{1.4in}|} \hline
+\begin{table}[H]
+\caption{Original set of arithmetic expression tests. Note that floating pointing values are accurate to three decimal places for the fractional part. ResE is expected result and ResA is actual result.
+\\}
+\begin{tabular}{|p{1.8in}|p{0.6in}|p{0.6in}|p{0.6in}|p{1.4in}|} \hline
 Expression & ResE & ResA& Pass/Fail & Action/comment \\ \hline \hline
-$5*3+(2*3-2)/2+6$ & 23 &  &  &  ... \\ \hline
-$9-3-2$ & 4 & & & left assoc.\  \\ \hline
-$10/3$ & 3 & & & int division  \\ \hline
-$10/3.0$ & 3.333 & & & float division \\ \hline
-$10\%3$ & 1 & & & \\ \hline
-$10 - -2$ & 12 & & & unary minus\\ \hline
-$-2 + 10$ & 8 & & & \\ \hline
-$3*5\verb|^|(-1+3)-2\verb|^|2*-3$ & 87 & & & power test \\ \hline
-$-3\verb|^|2$ & -9(*) or 9 & & & precedence \\ \hline
-$-7\%3$ & 2(*) or -1 & & & precedence (*)Python\\ \hline
-$2*3^2$ & 18 & & & precedence pow > mult \\ \hline
-$3*5\verb|^|(-1+3)-2\verb|^|-2*-3$ & 75.750 or 75 & & & \\ \hline
-$3*5\verb|^|(-1+3)-2.0\verb|^|-2*-3$ & 75.750 & & & \\ \hline
-$(((3*2--2)))$ & 8 & & & \\ \hline 
-$(((3*2--2))$ & Error & & & syntax error \\ \hline
-$-((3*5-2*3))$ & -9 & & &  minus expression \\ \hline
-$x = 3; (2*x)-x\verb|^|2*5$ & -39 & & & var assign \\ \hline
-$x = 3; (2*x)-x\verb|^|2*5/2$ & -16 & & & \\ \hline
-$x = 3; (2*x)-x\verb|^|2*(5/2)$ & -12 & & & \\ \hline
-$x = 3; (2*x)-x\verb|^|2*5/2.0$ & -16.5 & & & \\ \hline
-$x = 3; (2*x)-x\verb|^|2*5\%2$ & 5 & & &  \\ \hline
-$x = 3; (2*x)-x\verb|^|2*(5\%2)$ & -3 & & &  \\ \hline
-... & ... & ... & ... & ... \\ \hline
+$5*3+(2*3-2)/2+6$ & 23 & 23 & PASS &  ... \\ \hline
+$9-3-2$ & 4 & 4 & PASS & left assoc.\  \\ \hline
+$10/3$ & 3 & 3 & PASS & int division  \\ \hline
+$10/3.0$ & 3.333 & 3.333 & PASS & float division \\ \hline
+$10\%3$ & 1 & 1 & PASS & \\ \hline
+$10 - -2$ & 12 & 12 & PASS & unary minus\\ \hline
+$-2 + 10$ & 8 & 8 & PASS & \\ \hline
+$3*5\verb|^|(-1+3)-2\verb|^|2*-3$ & 87 & 87 & PASS & power test \\ \hline
+$-3\verb|^|2$ & -9(*) or 9 & 9 & PASS & precedence \\ \hline
+$-7\%3$ & 2(*) or -1 & -1 & PASS & precedence (*)Python\\ \hline
+$2*3^2$ & 18 & 18 & PASS & precedence pow > mult \\ \hline
+$3*5\verb|^|(-1+3)-2\verb|^|-2*-3$ & 75.750 or 75 & 75 & PASS & \\ \hline
+$3*5\verb|^|(-1+3)-2.0\verb|^|-2*-3$ & 75.750 & 75.750 & PASS & \\ \hline
+$(((3*2--2)))$ & 8 & 8 & PASS & \\ \hline 
+$(((3*2--2))$ & Error & Syntax Error & PASS & syntax error \\ \hline
+$-((3*5-2*3))$ & -9 & -9 & PASS &  minus expression \\ \hline
+$x = 3; (2*x)-x\verb|^|2*5$ & -39 & 39 & PASS & var assign \\ \hline
+$x = 3; (2*x)-x\verb|^|2*5/2$ & -16 & -16 & PASS & \\ \hline
+$x = 3; (2*x)-x\verb|^|2*(5/2)$ & -12 & -12 & PASS & \\ \hline
+$x = 3; (2*x)-x\verb|^|2*5/2.0$ & -16.5 & -16.5 & PASS & \\ \hline
+$x = 3; (2*x)-x\verb|^|2*5\%2$ & 5 & 5 & PASS &  \\ \hline
+$x = 3; (2*x)-x\verb|^|2*(5\%2)$ & -3 & -3 & PASS &  \\ \hline
+\end{tabular}
+\label{TableTest1}
+\end{table}
+
+\begin{table}[H]
+\caption{Boolean expression \& statement tests.
+\\}
+\begin{tabular}{|p{1.8in}|p{0.6in}|p{0.6in}|p{0.6in}|p{1.4in}|} \hline
+Expression & ResE & ResA& Pass/Fail & Action/comment \\ \hline
+$5 > 3$ & 1 & 1 & PASS & \\ \hline
+$3 > 5$ & 0 & 0 & PASS & \\ \hline
+$3 < 5$ & 1 & 1 & PASS & \\ \hline
+$5 < 3$ & 0 & 0 & PASS & \\ \hline
+$2 == 2$ & 1 & 1 & PASS & \\ \hline
+$2 == 1$ & 0 & 0 & PASS & \\ \hline
+$2 != 2$ & 0 & 0 & PASS & \\ \hline
+$2 != 1$ & 1 & 1 & PASS & \\ \hline
+$!1$ & 0 & 0 & PASS & \\ \hline
+$!0$ & 1 & 1 & PASS & \\ \hline
+$1$ and $1$ & 1 & 1 & PASS & \\ \hline
+$0$ and $1$ & 0 & 0 & PASS & \\ \hline
+$1$ and $0$ & 0 & 0 & PASS & \\ \hline
+$0$ and $0$ & 0 & 0 & PASS & \\ \hline
+$5 > 2$ and $10 == 4$ & 0 & 0 & PASS & \\ \hline
+$5 > 2$ and $10 != 4$ & 1 & 1 & PASS & \\ \hline
+$1$ or $1$ & 1 & 1 & PASS & \\ \hline
+$0$ or $1$ & 1 & 1 & PASS & \\ \hline
+$1$ or $0$ & 1 & 1 & PASS & \\ \hline
+$0$ or $0$ & 0 & 0 & PASS & \\ \hline
+$5 > 2$ or $10 == 4$ & 1 & 1 & PASS & \\ \hline
+$5 > 2$ or $10 != 4$ & 1 & 1 & PASS & \\ \hline
+$>$ & Error & Syntax Error & PASS & \\ \hline
+$< 3$ & Error & Syntax Error & PASS & \\ \hline
+$!$ & Error & Syntax Error & PASS & \\ \hline
+$3 == 5 !=$ & Error & Syntax Error & PASS & \\ \hline
+i = 0; while i < 5 \{ i = i + 1; \} y = i; & 5 & 5 & PASS & \\ \hline
+i = 7; if i == 7 \{ y = 8; \} & 8 & 8 & PASS & \\ \hline
+i = 0; while i < 5 y = i; & Error & Syntax Error & PASS & \\ \hline
+i = 0; if i < 5 y = i; & Error & Syntax Error & PASS & \\ \hline
+i = 0; while \{ y = i; \} & Error & Syntax Error & PASS & \\ \hline
+i = 0; if \{ y = i; \} & Error & Syntax Error & PASS & \\ \hline
 \end{tabular}
 \label{Table2}
 \end{table}
 
+\begin{table}[H]
+\caption{Expression tests.
+\\}
+\begin{tabular}{|p{1.8in}|p{0.6in}|p{0.6in}|p{0.6in}|p{1.4in}|} \hline
+Expression & ResE & ResA& Pass/Fail & Action/comment \\ \hline \hline
+$5 + 3$ & 8 & 8 & PASS & \\ \hline
+$200 + 13 + 45$ & 258 & 258 & PASS & \\ \hline
+$3 + 1.1$ & 4.1 & 4.1 & PASS & \\ \hline
+$5 + 3$ & 8 & 8 & PASS & \\ \hline
+$+$ & Error & Syntax Error & PASS & \\ \hline
+$+ 3$ & Error & Syntax Error & PASS & \\ \hline
+$3 +$ & Error & Syntax Error & PASS & \\ \hline
+$3 + 5 +$ & Error & Syntax Error & PASS & \\ \hline
+$3 * 3$ & 9 & 9 & PASS & \\ \hline
+$8 * 4 * 3$ & 96 & 96 & PASS & \\ \hline
+$3 * 1.1$ & 3.3 & 3.3 & PASS & \\ \hline
+$3.256 * 1.59$ & 5.177 & 5.177 & PASS & \\ \hline
+$*$ & Error & Syntax Error & PASS & \\ \hline
+$* 3$ & Error & Syntax Error & PASS & \\ \hline
+$3 *$ & Error & Syntax Error & PASS & \\ \hline
+$3 * 5 *$ & Error & Syntax Error & PASS & \\ \hline
+$6 / 3$ & 2 & 2 & PASS & \\ \hline
+$5 / 3.0$ & 1.667 & 1.667 & PASS & \\ \hline
+$12 / 3 / 2$ & 2 & 2 & PASS & \\ \hline
+$3.2 / 2$ & 1.6 & 1.6 & PASS & \\ \hline
+$3.4 / 2.3$ & 1.478 & 1.478 & PASS & \\ \hline
+$/$ & Error & Syntax Error & PASS & \\ \hline
+$/ 3$ & Error & Syntax Error & PASS & \\ \hline
+$3 /$ & Error & Syntax Error & PASS & \\ \hline
+$3 / 5 /$ & Error & Syntax Error & PASS & \\ \hline
+$3 / 0$ & Error & Divide By Zero & PASS & \\ \hline
+$3 / 0.0$ & Error & Divide By Zero & PASS & \\ \hline
+\end{tabular}
+\label{TableTest3}
+\end{table}
+
+\begin{table}[H]
+\caption{Expression tests continued.
+\\}
+\begin{tabular}{|p{1.8in}|p{0.6in}|p{0.6in}|p{0.6in}|p{1.4in}|} \hline
+Expression & ResE & ResA& Pass/Fail & Action/comment \\ \hline \hline
+$6 \% 3$ & 0 & 0 & PASS & \\ \hline
+$5 \% 3$ & 2 & 2 & PASS & \\ \hline
+$19 \% 5 \% 3$ & 1 & 1 & PASS & \\ \hline
+$3.2 \% 2$ & 1.2 & 1.2 & PASS & \\ \hline
+$3.4 \% 2.3$ & 1.1 & 1.1 & PASS & \\ \hline
+$\%$ & Error & Syntax Error & PASS & \\ \hline
+$\% 3$ & Error & Syntax Error & PASS & \\ \hline
+$3 \%$ & Error & Syntax Error & PASS & \\ \hline
+$3 \% 5 \%$ & Error & Syntax Error & PASS & \\ \hline
+$3 \% 0$ & Error & Divide By Zero & PASS & \\ \hline
+$3 \% 0.0$ & Error & Divide By Zero & PASS & \\ \hline
+$5\verb|^|2$ & 25 & 25 & PASS & \\ \hline
+$5\verb|^|2\verb|^|2$ & 625 & 625 & PASS & \\ \hline
+$2\verb|^|1.1$ & 2.144 & 2.144 & PASS & \\ \hline
+$\verb|^|$ & Error & Syntax Error & PASS & \\ \hline
+$\verb|^| 3$ & Error & Syntax Error & PASS & \\ \hline
+$3 \verb|^|$ & Error & Syntax Error & PASS & \\ \hline
+$3 \verb|^| 5 \verb|^|$ & Error & Syntax Error & PASS & \\ \hline
+$-2$ & -2 & -2 & PASS & \\ \hline
+$5 - - 2$ & 7 & 7 & PASS & \\ \hline
+$5 +- 2$ & 3 & 3 & PASS & \\ \hline
+$5 +-- 3$ & 8 & 8 & PASS & \\ \hline
+$2 \verb|^|- 2$ & 0 & 0 & PASS & \\ \hline
+$2 \verb|^|-- 2$ & 4 & 4 & PASS & \\ \hline
+$-$ & Error & Syntax Error & PASS & \\ \hline
+$5 ++- 3$ & Error & Syntax Error & PASS & \\ \hline
+$2 \verb|^| -$ & Error & Syntax Error & PASS & \\ \hline
+$2--+--2$ & Error & Syntax Error & PASS & \\ \hline
+\end{tabular}
+\label{TableTest4}
+\end{table}
+
+\begin{table}[H]
+\caption{Lexer tests for operators, floating point numbers, and symbols.
+\\}
+\begin{tabular}{|p{1.0in}|p{1.3in}|p{1.3in}|p{0.6in}|p{1.2in}|} \hline
+Expression & ResE & ResA& Pass/Fail & Action/comment \\ \hline \hline
+3 + 5 & [Int 3; Add; Int 5] & [Int 3; Add; Int 5] & PASS & \\ \hline
+1 * 2 & [Int 1; Mul; Int 2] & [Int 1; Mul; Int 2] & PASS & \\ \hline
+3 \verb|^| 8 & [Int 3; Pwr; Int 8] & [Int 3; Pwr; Int 8] & PASS & \\ \hline
+3 £ 4 & Error & Syntax Error & PASS & \\ \hline
+5 5 : & Error & Syntax Error & PASS & \\ \hline
+3.8 & [Flt 3.8] & [Flt 3.8] & PASS & \\ \hline
+3.008 & [Flt 3.008] & [Flt 3.008] & PASS & \\ \hline
+3.811 & [Flt 3.811] & [Flt 3.811] & PASS & \\ \hline
+0.811 & [Flt 0.811] & [Flt 0.811] & PASS & \\ \hline
+100.001 & [Flt 100.001] & [Flt 100.001] & PASS & \\ \hline
+7. & Error & Syntax Error & PASS & \\ \hline
+.7 & Error & Syntax Error & PASS & \\ \hline
+5 .2 & Error & Syntax Error & PASS & \\ \hline
+2. 5 & Error & Syntax Error & PASS & \\ \hline
+x & [Sym "x"] & [Sym "x"] & PASS & \\ \hline
+y & [Sym "y"] & [Sym "y"] & PASS & \\ \hline
+varname & [Sym "varname"] & [Sym "varname"] & PASS & \\ \hline
+myvar & [Sym "myvar"] & [Sym "myvar"] & PASS & \\ \hline
+3 + variable & [Int 3; Add; SymT "variable"] & [Int 3; Add; Sym "variable"] & PASS & \\ \hline
+\end{tabular}
+\label{Table5}
+\end{table}
+
 \section{GUI testing}
+
+\begin{table}[H]
+\caption{A series of manual/visual tests to determine functionality.
+\\}
+\begin{tabular}{|p{1.8in}|p{1.8in}|p{1.4in}|p{0.6in}|} \hline
+Action & ResE & ResA & Pass/Fail \\ \hline \hline
+Write code into main text field and hit the run button. & The program is executed, with expected plots and output. & The program is executed as expected. & PASS \\ \hline
+Press the clear button. & Any existing plots should be cleared. & Existing plots are cleared. & PASS  \\ \hline
+Press the open button. & A dialogue is shown allowing the user to select a text file to load into the buffer. & A file is loaded into the text buffer via a dialogue. & PASS \\ \hline
+Press the save button. & The existing text buffer should be saved to a text file via a dialogue. & The current text buffer is written to a text file. & PASS \\ \hline
+Press the help button. & The tutorial window should be displayed. & The tutorial window is displayed. & PASS \\ \hline
+\end{tabular}
+\label{TableGUITest1}
+\end{table}
 
 \section{Plot testing}
 
-\chapter{Other stuff}
-\label{app:other}
+\begin{table}[H]
+\caption{A Series of manual/visual tests to determine functionality.
+\\}
+\begin{tabular}{|p{1.8in}|p{1.8in}|p{1.4in}|p{0.6in}|} \hline
+Action & ResE & ResA& Pass/Fail \\ \hline \hline
+Execute "plot x + 2;" and set minimum X = -10, maximum X = 10, resolution = 10. Observe the plotted values in the GUI. & Where Y = 0, X should be 2. Where Y = 1 X should be 3. & Where Y = 0, X = 2. Where Y = 0, X = 3. & PASS \\ \hline
+Execute "plot x\verb|^|2 - 2;" and set minimum X = -10, maximum X = 10, resolution = 10. Observe the plotted values in the GUI. & Where Y = 0, X = -2. Where Y = 5, X = 23. & Where Y = 0, X = -2. Where Y = 0, X = 23. & PASS \\ \hline
+\end{tabular}
+\label{TablePlotTest1}
+\end{table}
+
 \end{document}
 
