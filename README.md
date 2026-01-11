@@ -1,6 +1,6 @@
 # Interpreter-Project
 
-### BNF
+### BNF History
 
 ```
 // Grammar 0 in BNF: ( Original )
@@ -53,7 +53,7 @@
 // <FL>       ::= <digit>+ "." <digit>+
 
 
-// Grammar 5 in BNF: ( Current )
+// Grammar 5 in BNF:
 //
 // STATEMENTS
 // <STA>    ::= ( <ASN> | <PLT> | <PTR> ) ";"
@@ -78,23 +78,58 @@
 // <FL>   ::= <digit+> "." <digit+>
 
 
+// Grammar 6 in BNF: ( Current )
+//
 // STATEMENTS
-// STA    -> Statement
-// ASN    -> Assignment
-// PLT    -> Plot
-// PLTopt -> Plot
-// SYM    -> Symbol
+// <PROG>  ::= <STA> <PROG> | <empty>
+// <STA>   ::= <WHL> | <IF> | <ASN> | <PLT> | <PRT>
+// <WHL>   ::= "while" <BE> "{" <PROG> "}"
+// <IF>    ::= "if" <BE> "{" <PROG> "}"
+// <ASN>   ::= "let" <SYM> "=" <BE> ";" | "func" <SYM> "=" <BE> ";"
+// <PLT>   ::= "plot" <BE> ";"
+// <PRT>   ::= "print" <BE> ";" | <BE> ";"              // Print top level expressions.
+// <SYM>   ::= <alpha+>
 //
 // EXPRESSIONS
-// E      -> Expression
-// Eopt   -> Expression/Optional
-// T      -> Term
-// Topt   -> Term/Optional
-// P      -> Power
-// Popt   -> Power/Optional
-// U      -> Unary
-// NM     -> Number
-// IN     -> Integer
-// FL     -> Floating Point
-// CX     -> Complex Number
+// <BE>    ::= <BU> <BEopt>
+// <BEopt> ::= "and" <BU> <BEopt> | "or" <BU> <BEopt> | <empty>
+// <BU>    ::= "!" <BU> | <BT>
+// <BT>    ::= <E> <BTopt>
+// <BTopt> ::= "==" <E> <BTopt> | "!=" <E> <BTopt> | ">" <E> <BTopt> | "<" <E> <BTopt> | <empty>
+// <E>     ::= <T> <Eopt>
+// <Eopt>  ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+// <T>     ::= <P> <Topt>
+// <Topt>  ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
+// <P>     ::= <U> <Popt>
+// <Popt>  ::= "^" <U> <Popt> | <empty>
+// <U>     ::= "-" <U> | <NM>
+// <NM>    ::= <VL> | <SYM> | "(" <BE> ")"            // Where SYM is defined in symbol table.
+// <VL>    ::= <IN> | <FL>                            // Separate literal value simplifies implementation.
+// <IN>    ::= <digit+>
+// <FL>    ::= <digit+> "." <digit+>
+
+//// KEY
+//// STATEMENTS
+// PROG  -> Program
+// STA   -> Statement
+// ASN   -> Variable/Function Assignment
+// PLT   -> Plot
+// PTR   -> Print
+// SYM   -> Symbol
+//// EXPRESSIONS
+// BE    -> Boolean Expression
+// BEopt -> Boolean Expression/Optional
+// BU    -> Boolean Unary
+// BT    -> Boolean Term
+// E     -> Expression
+// Eopt  -> Expression/Optional
+// T     -> Term
+// Topt  -> Term/Optional
+// P     -> Power
+// Popt  -> Power/Optional
+// U     -> Unary
+// NM    -> Number
+// VL    -> Value
+// IN    -> Integer
+// FL    -> Floating Point
 ```

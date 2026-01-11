@@ -1,0 +1,23 @@
+\begin{thebibliography}{}
+
+\bibitem[{Desmos Studio PBC}, 2023]{Desmos:2023}
+{Desmos Studio PBC} (2023).
+\newblock Desmos website.
+\newblock https://desmos.com [Accessed: 30/11/2023].
+
+\bibitem[{MathWorks \textregistered}, 2023]{Matlab:2023}
+{MathWorks \textregistered} (2023).
+\newblock Matlab website.
+\newblock https://uk.mathworks.com/products/matlab.html [Accessed: 30/11/2023].
+
+\bibitem[{Microsoft Learn, WPF}, 2023]{WPF:2023}
+{Microsoft Learn, WPF} (2023).
+\newblock {\em Windows Presentation Foundation documentation}.
+\newblock Microsoft.
+
+\bibitem[Nystrom, 2021]{Nystrom:2021}
+Nystrom, R. (2021).
+\newblock {\em Crafting Interpreters}.
+\newblock Genever Benning, Great Brittain.
+
+\end{thebibliography}

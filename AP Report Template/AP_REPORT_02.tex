@@ -1,0 +1,491 @@
+
+\documentclass[a4paper, oneside, 11pt]{report}
+\usepackage{epsfig,pifont,float,multirow,amsmath,amssymb}
+\newcommand{\mc}{\multicolumn{1}{c|}}
+\newcommand{\mb}{\mathbf}
+\newcommand{\mi}{\mathit}
+\newcommand{\oa}{\overrightarrow}
+\newcommand{\bs}{\boldsymbol}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\la}{\leftarrow}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\topmargin = 0pt
+\voffset = -80pt
+\oddsidemargin = 15pt
+\textwidth = 425pt
+\textheight = 750pt
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+\rule{12cm}{1mm} \\
+\vspace{1cm}
+{\large  CMP-6048A/7009A Advanced Programming} %Delete as appropriate
+\vspace{7.5cm}
+\\{\Large Project Report - Due 12 January 2026 before 15:00}
+\vspace{1.5cm}
+\\{\LARGE Maths Interpreter software} % You can add to this title of modify it if you wish
+\vspace{1.0cm}
+\\{\Large Group members: \\ Mason Buckle and Anthony De Cruz.\ }
+\vspace{10.0cm}
+\\{\large School of Computing Sciences, University of East Anglia}
+\\ \rule{12cm}{0.5mm}
+\\ \hspace{8.5cm} {\large Version 2.0}
+\end{center}
+\end{titlepage}
+
+
+\setcounter{page}{1}
+%\pagenumbering{roman}
+%\newpage
+
+
+\begin{abstract}
+Please replace this section with your own abstract. An abstract is a brief summary (maximum 250 words) of your entire project. It should cover your objectives, your methodologies used, a brief developmental history, your final results, in particular covering the optional tasks, and a discussion and conclusion. You do not cover the literature or background in an abstract nor should you use abbreviations or acronyms. The remainder of this report template has clear chapter titles and we suggest to stick to these although you can organise your material inside each chapter to your own preferences. A guideline in size is approximately 3,500 words (not including abstract, captions and references) but no real limit on figures, tables, diagrams, pseudo-code etc.
+\end{abstract}
+
+\chapter{Introduction}
+\label{chap:intro}
+
+\section{Project statement}
+This project focuses on developing a desktop maths software solution with GUI that uses an interpreter. This project play an important role in areas such as education and research, offering a platform to test mathematical concepts easier. Fsharp is used for the interpreter and Csharp (WPF) is ued for the GUI.
+The software has been developed over a period of 4 months and was split into sprints (see Development History \ref{Chap:DevHist}). We accomplished this via modular design and 
+testing each part at every stage. Git was used for version control and Github's kanban board feature was used to break down tasks. The final deliverable is a capable desktop maths software solution with a GUI that succesfully links a maths interpreter with a user-friendly interface.
+
+
+\section{Aims and objectives}
+The main overarching goal of the project is to develop a capable maths intepreter and GUI with a user friendly interface, this is broken down further into the main project objectives below: 
+
+\begin{center}
+{\large Project Objectives} \\[0.5em] 
+\rule{0.6\textwidth}{0.4pt} \\[1em]   
+\begin{minipage}{0.6\textwidth}       
+\begin{enumerate}
+    \item To implement a interpreter capable of correctly intepreting and executing arithmetic expressions, managing variable assignment and executing control flow loops.
+    \item To create a responsive GUI that is capable of accepting user commands, displaying results and displaying errors
+    \item To create a plotting section in the GUI to plot both linear and polynomial functions and have interactive capabilities such as zooming in and out.
+    \item To provide a method of visualization by rendering the parse tree
+    \item To provide a method of GPU speed up to increare the quality of plotting
+\end{enumerate}
+\end{minipage}
+\end{center}
+
+\begin{table}[h]
+\caption{(Functional) MoSCoW}
+\begin{center}
+\begin{tabular}{|p{1in}|p{2in}|p{2.5in}|} \hline
+Priority & Task & Comments \\ \hline \hline
+\multirow{3}{1in}{Must}
+& To implement a intpreter cabable of correctly parsing and executing arithmetic expressions & Is the most essential task within the brief \\ \cline{2-3}
+& To implement variable management allowing assignment of values to variables and to use variables in expressions & An important feature needed to allow polynomials later in the project  \\ \cline{2-3}
+& To develop a basic GUI that has a command prompt for user input and a text field for displaying results or errors & Essential for user interaction and error reporting\\ \cline{2-3}
+& To be able to plot both linear and polynomial functions within the GUI & The main visualization requirement, needed to visualise mathematical functions. \\ \hline \hline
+\multirow{3}{1in}{Should}
+& To extend the interpreter with control flow & Implementing for loops \\ \cline{2-3}
+& To implement interactive plotting features E.g. zooming in and out & Enhances the user experience by allowing the user to explore the plane  \\ \hline \hline
+\multirow{3}{1in}{Could}
+& To visualize the parse tree  &  Helpful for debugging the parsing logic\\ \cline{2-3}
+& To implement GPU acceleration & To optimise the rendering of the grid line during real-time interaction \\ \hline \hline
+\multirow{3}{1in}{Should not}
+& To implement a compiler/transpiler & Overly ambitious given the development time. \\ \cline{2-3}
+& To implement advanced mathematical features (differentiation/integration) & We wanted to ensurte the core intpreter was robust and also dropped to the development time. \\ \hline
+\end{tabular}
+\label{Table1}
+\end{center}
+\end{table}
+
+
+\chapter{Background}
+
+Give a brief background on similar software, e.g.\ \cite{Desmos:2023}, \cite{Matlab:2023}, etc.
+Also cite the books \cite{Nystrom:2021} or documentation \cite{WPF:2023} that you consulted.
+You should add additional references to the corresponding bib file (References.bib) referred to in the bottom of this document.
+
+
+\chapter{Development History}\label{Chap:DevHist}
+
+Describe the history of your development in terms of the iterations or sprints in your project (your Github repository or other version control should help you to retrospectively identify these). Use different sections for different sprints and subsections for specific details on the same sprint. Feel free to use subsubsections or paragraphs (which are not numbered) if needed. 
+
+\section{Sprint 1: Basic expressions and GUI}
+\subsection{Grammar in BNF}
+\begin{verbatim}
+<E>    ::= <T> <Eopt>
+<Eopt> ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+<T>    ::= <NR> <Topt>
+<Topt> ::= "*" <NR> <Topt> | "/" <NR> <Topt> | <empty>
+<NR>   ::= "Num" <value> | "(" <E> ")"
+\end{verbatim}
+
+\subsection{Basic GUI}
+We used WPF with C\# to develop a basic GUI - see Figure \ref{gui01}.
+
+\begin{figure}[htb]
+\begin{center}
+\includegraphics[width=0.9 \columnwidth]{GUI_01.png}
+\caption{A very basic GUI!}
+\label{gui01}
+\end{center}
+\end{figure}
+
+\subsection{Testing}
+A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to from here.
+
+\section{Sprint 2: Adding unary minus, powers and mod}
+
+\subsection{BNF}
+\begin{verbatim}
+<E>    ::= <T> <Eopt>
+<Eopt> ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+<T>    ::= <U> <Topt>
+<Topt> ::= "*" <U> <Topt> | "/" <U> <Topt> | "%" <U> <Topt> | <empty>
+<U>    ::= "-" <U> | <P>
+<P>    ::= <NR> <Popt>
+<Popt> ::= "^" <NR> <Popt> | <empty>
+<NR>   ::= "Num" <value> | "(" <E> ")"
+\end{verbatim}
+
+\subsection{Updated GUI}
+
+\begin{figure}[htb]
+\begin{center}
+\includegraphics[width=0.9 \columnwidth]{GUI_02.png}
+\caption{Update GUI}
+\label{gui02}
+\end{center}
+\end{figure}
+
+\begin{figure}[htb]
+\begin{center}
+\includegraphics[width=0.9 \columnwidth]{GUI_03.png}
+\caption{Tutorial Page}
+\label{gui03}
+\end{center}
+\end{figure}
+
+\subsection{Testing}
+A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to from here.
+
+\section{Sprint 3: Added floating point}
+\subsection{BNF}
+\begin{verbatim}
+<E>    ::= <T> <Eopt>
+<Eopt> ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+<T>    ::= <P> <Topt>
+<Topt> ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
+<P>    ::= <U> <Popt>
+<Popt> ::= "^" <U> <Popt> | <empty>
+<U>    ::= "-" <U> | <NM>
+<NM>   ::= <IN> | <FL> | "(" <E> ")"
+<IN>   ::= <digit>+
+<FL>   ::= <digit>+ "." <digit>+
+\end{verbatim}
+
+\subsection{Testing}
+A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to from here.
+
+\section{Sprint 4: Added linear plotting}
+
+\subsection{Updated GUI}
+\begin{figure}[htb]
+\begin{center}
+\includegraphics[width=0.9 \columnwidth]{GUI_04.png}
+\caption{Plot GUI}
+\label{gui04}
+\end{center}
+\end{figure}
+
+\subsection{Testing}
+A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to from here.
+
+\section{Sprint 5: Added polynomial plotting}
+
+\chapter{Final deliverable}\label{Impl}
+
+In this chapter you cover the final or ``ultimate'' version of your project. It will show the final BNF, the final GUI, the architecture (which should be MVVM or MVC) that includes UML diagrams, additional algorithms if not already included in the previous sprint sections.
+
+\section{Final BNF}
+
+\section{Final GUI}
+
+See Figure \ref{gui02}.
+
+\begin{figure}[htb]
+%\begin{center}
+\includegraphics[width=0.9 \columnwidth]{GUI_02.png}
+\caption{A potentially final GUI!}
+\label{gui02}
+%\end{center}
+\end{figure}
+
+\section{Code architecture}
+
+Fig.\ \ref{class} shows a UML class diagram (class, sequence and state diagrams are the most frequently used UML diagrams). Illustrating your code architecture - that should be of the MVC family and, considering it is developed in C\# with WPF more specifcally the MVVM pattern - is very important.
+
+\begin{figure}[htb]
+%\begin{center}
+\includegraphics[width=1.0 \columnwidth]{class.png}
+\caption{A UML class diagram to be replaced with yours!}
+\label{class}
+%\end{center}
+\end{figure}
+
+\section{Algorithms}
+
+Algorithms can be described in this chapter if not already covered in previous sections. Pseudo-code is preferred over code snippets. If you use the latter then make sure it is well commented inside the code or via the figure caption. 
+
+\begin{algorithm}[th]
+\caption{ The Newton-Raphson method }
+\begin{algorithmic}[1]
+\STATE Initialise root based on estimate
+\STATE Set stop criterion
+\\ \texttt{const double error = 0.000001;}
+\WHILE {stop criterion not met}
+	\STATE Compute f(root)
+	\STATE Compute f'(root)
+	\STATE root := root - f(root)/f'(root)
+\ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+
+
+Note that code snippets or lists of crucial programming code or large UML diagrams should go in Appendix \ref{app:other} (or further appendices).
+
+\subsection{Testing}
+
+Extensive unit testing as been written for all aspects of the interpreter.
+
+Describe what testing you have done on the interpreter (lexer, parser and execution), GUI and GUI-Interpreter communication, plotting, etc. Table \ref{Table2} in Appendix \ref{app:test} should be completed to do basic arithmetic expression tests.
+
+\chapter{Discussion, conclusion and future work}
+
+Briefly discuss  your achievements and put them in perspective with the MoSCoW analysis you specified in Table \ref{Table1}. Also discuss future developments and how you see the deliverable improving if more time could be spent. Note that this section should not be used as a medium to vent frustrations on whatever did not work out (group issues, not enough time, illness, etc.) as this should be dealt with separately - keep it professional!
+
+\bibliographystyle{apalike}
+\bibliography{References}
+
+\appendix
+\chapter{Contributions}
+
+\section{Individual Contributions}
+
+\begin{table}[H]
+\begin{tabular}{|p{1.2in}|p{1.2in}|} \hline
+Name & Contribution \\ \hline
+Anthony de Cruz & 50\% \\ \hline
+Mason Buckle & 50\% \\ \hline
+\end{tabular}
+\label{TableContribution}
+\end{table}
+
+Both members equally contributed to the project. We both worked on designing the application/BNF in equal time as well as performing testing of the application. Anthony developed most of the F\# interpreter and Mason developed the plotting and GUI in C\#. This complete report was also written in equal parts by both members with Mason writing chapters 1, 2 and 3 and Anthony writing chapters 4 and 5.
+
+\chapter{Testing}
+\label{app:test}
+\section{Arithmetic expression testing}
+
+\begin{table}[H]
+\caption{Original set of arithmetic expression tests. Note that floating pointing values are accurate to three decimal places for the fractional part. ResE is expected result and ResA is actual result.
+\\}
+\begin{tabular}{|p{1.8in}|p{0.6in}|p{0.6in}|p{0.6in}|p{1.4in}|} \hline
+Expression & ResE & ResA& Pass/Fail & Action/comment \\ \hline \hline
+$5*3+(2*3-2)/2+6$ & 23 & 23 & PASS &  ... \\ \hline
+$9-3-2$ & 4 & 4 & PASS & left assoc.\  \\ \hline
+$10/3$ & 3 & 3 & PASS & int division  \\ \hline
+$10/3.0$ & 3.333 & 3.333 & PASS & float division \\ \hline
+$10\%3$ & 1 & 1 & PASS & \\ \hline
+$10 - -2$ & 12 & 12 & PASS & unary minus\\ \hline
+$-2 + 10$ & 8 & 8 & PASS & \\ \hline
+$3*5\verb|^|(-1+3)-2\verb|^|2*-3$ & 87 & 87 & PASS & power test \\ \hline
+$-3\verb|^|2$ & -9(*) or 9 & 9 & PASS & precedence \\ \hline
+$-7\%3$ & 2(*) or -1 & -1 & PASS & precedence (*)Python\\ \hline
+$2*3^2$ & 18 & 18 & PASS & precedence pow > mult \\ \hline
+$3*5\verb|^|(-1+3)-2\verb|^|-2*-3$ & 75.750 or 75 & 75 & PASS & \\ \hline
+$3*5\verb|^|(-1+3)-2.0\verb|^|-2*-3$ & 75.750 & 75.750 & PASS & \\ \hline
+$(((3*2--2)))$ & 8 & 8 & PASS & \\ \hline 
+$(((3*2--2))$ & Error & Syntax Error & PASS & syntax error \\ \hline
+$-((3*5-2*3))$ & -9 & -9 & PASS &  minus expression \\ \hline
+$x = 3; (2*x)-x\verb|^|2*5$ & -39 & 39 & PASS & var assign \\ \hline
+$x = 3; (2*x)-x\verb|^|2*5/2$ & -16 & -16 & PASS & \\ \hline
+$x = 3; (2*x)-x\verb|^|2*(5/2)$ & -12 & -12 & PASS & \\ \hline
+$x = 3; (2*x)-x\verb|^|2*5/2.0$ & -16.5 & -16.5 & PASS & \\ \hline
+$x = 3; (2*x)-x\verb|^|2*5\%2$ & 5 & 5 & PASS &  \\ \hline
+$x = 3; (2*x)-x\verb|^|2*(5\%2)$ & -3 & -3 & PASS &  \\ \hline
+\end{tabular}
+\label{TableTest1}
+\end{table}
+
+\begin{table}[H]
+\caption{Boolean expression \& statement tests.
+\\}
+\begin{tabular}{|p{1.8in}|p{0.6in}|p{0.6in}|p{0.6in}|p{1.4in}|} \hline
+Expression & ResE & ResA& Pass/Fail & Action/comment \\ \hline
+$5 > 3$ & 1 & 1 & PASS & \\ \hline
+$3 > 5$ & 0 & 0 & PASS & \\ \hline
+$3 < 5$ & 1 & 1 & PASS & \\ \hline
+$5 < 3$ & 0 & 0 & PASS & \\ \hline
+$2 == 2$ & 1 & 1 & PASS & \\ \hline
+$2 == 1$ & 0 & 0 & PASS & \\ \hline
+$2 != 2$ & 0 & 0 & PASS & \\ \hline
+$2 != 1$ & 1 & 1 & PASS & \\ \hline
+$!1$ & 0 & 0 & PASS & \\ \hline
+$!0$ & 1 & 1 & PASS & \\ \hline
+$1$ and $1$ & 1 & 1 & PASS & \\ \hline
+$0$ and $1$ & 0 & 0 & PASS & \\ \hline
+$1$ and $0$ & 0 & 0 & PASS & \\ \hline
+$0$ and $0$ & 0 & 0 & PASS & \\ \hline
+$5 > 2$ and $10 == 4$ & 0 & 0 & PASS & \\ \hline
+$5 > 2$ and $10 != 4$ & 1 & 1 & PASS & \\ \hline
+$1$ or $1$ & 1 & 1 & PASS & \\ \hline
+$0$ or $1$ & 1 & 1 & PASS & \\ \hline
+$1$ or $0$ & 1 & 1 & PASS & \\ \hline
+$0$ or $0$ & 0 & 0 & PASS & \\ \hline
+$5 > 2$ or $10 == 4$ & 1 & 1 & PASS & \\ \hline
+$5 > 2$ or $10 != 4$ & 1 & 1 & PASS & \\ \hline
+$>$ & Error & Syntax Error & PASS & \\ \hline
+$< 3$ & Error & Syntax Error & PASS & \\ \hline
+$!$ & Error & Syntax Error & PASS & \\ \hline
+$3 == 5 !=$ & Error & Syntax Error & PASS & \\ \hline
+i = 0; while i < 5 \{ i = i + 1; \} y = i; & 5 & 5 & PASS & \\ \hline
+i = 7; if i == 7 \{ y = 8; \} & 8 & 8 & PASS & \\ \hline
+i = 0; while i < 5 y = i; & Error & Syntax Error & PASS & \\ \hline
+i = 0; if i < 5 y = i; & Error & Syntax Error & PASS & \\ \hline
+i = 0; while \{ y = i; \} & Error & Syntax Error & PASS & \\ \hline
+i = 0; if \{ y = i; \} & Error & Syntax Error & PASS & \\ \hline
+\end{tabular}
+\label{Table2}
+\end{table}
+
+\begin{table}[H]
+\caption{Expression tests.
+\\}
+\begin{tabular}{|p{1.8in}|p{0.6in}|p{0.6in}|p{0.6in}|p{1.4in}|} \hline
+Expression & ResE & ResA& Pass/Fail & Action/comment \\ \hline \hline
+$5 + 3$ & 8 & 8 & PASS & \\ \hline
+$200 + 13 + 45$ & 258 & 258 & PASS & \\ \hline
+$3 + 1.1$ & 4.1 & 4.1 & PASS & \\ \hline
+$5 + 3$ & 8 & 8 & PASS & \\ \hline
+$+$ & Error & Syntax Error & PASS & \\ \hline
+$+ 3$ & Error & Syntax Error & PASS & \\ \hline
+$3 +$ & Error & Syntax Error & PASS & \\ \hline
+$3 + 5 +$ & Error & Syntax Error & PASS & \\ \hline
+$3 * 3$ & 9 & 9 & PASS & \\ \hline
+$8 * 4 * 3$ & 96 & 96 & PASS & \\ \hline
+$3 * 1.1$ & 3.3 & 3.3 & PASS & \\ \hline
+$3.256 * 1.59$ & 5.177 & 5.177 & PASS & \\ \hline
+$*$ & Error & Syntax Error & PASS & \\ \hline
+$* 3$ & Error & Syntax Error & PASS & \\ \hline
+$3 *$ & Error & Syntax Error & PASS & \\ \hline
+$3 * 5 *$ & Error & Syntax Error & PASS & \\ \hline
+$6 / 3$ & 2 & 2 & PASS & \\ \hline
+$5 / 3.0$ & 1.667 & 1.667 & PASS & \\ \hline
+$12 / 3 / 2$ & 2 & 2 & PASS & \\ \hline
+$3.2 / 2$ & 1.6 & 1.6 & PASS & \\ \hline
+$3.4 / 2.3$ & 1.478 & 1.478 & PASS & \\ \hline
+$/$ & Error & Syntax Error & PASS & \\ \hline
+$/ 3$ & Error & Syntax Error & PASS & \\ \hline
+$3 /$ & Error & Syntax Error & PASS & \\ \hline
+$3 / 5 /$ & Error & Syntax Error & PASS & \\ \hline
+$3 / 0$ & Error & Divide By Zero & PASS & \\ \hline
+$3 / 0.0$ & Error & Divide By Zero & PASS & \\ \hline
+\end{tabular}
+\label{TableTest3}
+\end{table}
+
+\begin{table}[H]
+\caption{Expression tests continued.
+\\}
+\begin{tabular}{|p{1.8in}|p{0.6in}|p{0.6in}|p{0.6in}|p{1.4in}|} \hline
+Expression & ResE & ResA& Pass/Fail & Action/comment \\ \hline \hline
+$6 \% 3$ & 0 & 0 & PASS & \\ \hline
+$5 \% 3$ & 2 & 2 & PASS & \\ \hline
+$19 \% 5 \% 3$ & 1 & 1 & PASS & \\ \hline
+$3.2 \% 2$ & 1.2 & 1.2 & PASS & \\ \hline
+$3.4 \% 2.3$ & 1.1 & 1.1 & PASS & \\ \hline
+$\%$ & Error & Syntax Error & PASS & \\ \hline
+$\% 3$ & Error & Syntax Error & PASS & \\ \hline
+$3 \%$ & Error & Syntax Error & PASS & \\ \hline
+$3 \% 5 \%$ & Error & Syntax Error & PASS & \\ \hline
+$3 \% 0$ & Error & Divide By Zero & PASS & \\ \hline
+$3 \% 0.0$ & Error & Divide By Zero & PASS & \\ \hline
+$5\verb|^|2$ & 25 & 25 & PASS & \\ \hline
+$5\verb|^|2\verb|^|2$ & 625 & 625 & PASS & \\ \hline
+$2\verb|^|1.1$ & 2.144 & 2.144 & PASS & \\ \hline
+$\verb|^|$ & Error & Syntax Error & PASS & \\ \hline
+$\verb|^| 3$ & Error & Syntax Error & PASS & \\ \hline
+$3 \verb|^|$ & Error & Syntax Error & PASS & \\ \hline
+$3 \verb|^| 5 \verb|^|$ & Error & Syntax Error & PASS & \\ \hline
+$-2$ & -2 & -2 & PASS & \\ \hline
+$5 - - 2$ & 7 & 7 & PASS & \\ \hline
+$5 +- 2$ & 3 & 3 & PASS & \\ \hline
+$5 +-- 3$ & 8 & 8 & PASS & \\ \hline
+$2 \verb|^|- 2$ & 0 & 0 & PASS & \\ \hline
+$2 \verb|^|-- 2$ & 4 & 4 & PASS & \\ \hline
+$-$ & Error & Syntax Error & PASS & \\ \hline
+$5 ++- 3$ & Error & Syntax Error & PASS & \\ \hline
+$2 \verb|^| -$ & Error & Syntax Error & PASS & \\ \hline
+$2--+--2$ & Error & Syntax Error & PASS & \\ \hline
+\end{tabular}
+\label{TableTest4}
+\end{table}
+
+\begin{table}[H]
+\caption{Lexer tests for operators, floating point numbers, and symbols.
+\\}
+\begin{tabular}{|p{1.0in}|p{1.3in}|p{1.3in}|p{0.6in}|p{1.2in}|} \hline
+Expression & ResE & ResA& Pass/Fail & Action/comment \\ \hline \hline
+3 + 5 & [Int 3; Add; Int 5] & [Int 3; Add; Int 5] & PASS & \\ \hline
+1 * 2 & [Int 1; Mul; Int 2] & [Int 1; Mul; Int 2] & PASS & \\ \hline
+3 \verb|^| 8 & [Int 3; Pwr; Int 8] & [Int 3; Pwr; Int 8] & PASS & \\ \hline
+3 £ 4 & Error & Syntax Error & PASS & \\ \hline
+5 5 : & Error & Syntax Error & PASS & \\ \hline
+3.8 & [Flt 3.8] & [Flt 3.8] & PASS & \\ \hline
+3.008 & [Flt 3.008] & [Flt 3.008] & PASS & \\ \hline
+3.811 & [Flt 3.811] & [Flt 3.811] & PASS & \\ \hline
+0.811 & [Flt 0.811] & [Flt 0.811] & PASS & \\ \hline
+100.001 & [Flt 100.001] & [Flt 100.001] & PASS & \\ \hline
+7. & Error & Syntax Error & PASS & \\ \hline
+.7 & Error & Syntax Error & PASS & \\ \hline
+5 .2 & Error & Syntax Error & PASS & \\ \hline
+2. 5 & Error & Syntax Error & PASS & \\ \hline
+x & [Sym "x"] & [Sym "x"] & PASS & \\ \hline
+y & [Sym "y"] & [Sym "y"] & PASS & \\ \hline
+varname & [Sym "varname"] & [Sym "varname"] & PASS & \\ \hline
+myvar & [Sym "myvar"] & [Sym "myvar"] & PASS & \\ \hline
+3 + variable & [Int 3; Add; SymT "variable"] & [Int 3; Add; Sym "variable"] & PASS & \\ \hline
+\end{tabular}
+\label{Table5}
+\end{table}
+
+\section{GUI testing}
+
+\begin{table}[H]
+\caption{A series of manual/visual tests to determine functionality.
+\\}
+\begin{tabular}{|p{1.8in}|p{1.8in}|p{1.4in}|p{0.6in}|} \hline
+Action & ResE & ResA & Pass/Fail \\ \hline \hline
+Write code into main text field and hit the run button. & The program is executed, with expected plots and output. & The program is executed as expected. & PASS \\ \hline
+Press the clear button. & Any existing plots should be cleared. & Existing plots are cleared. & PASS  \\ \hline
+Press the open button. & A dialogue is shown allowing the user to select a text file to load into the buffer. & A file is loaded into the text buffer via a dialogue. & PASS \\ \hline
+Press the save button. & The existing text buffer should be saved to a text file via a dialogue. & The current text buffer is written to a text file. & PASS \\ \hline
+Press the help button. & The tutorial window should be displayed. & The tutorial window is displayed. & PASS \\ \hline
+\end{tabular}
+\label{TableGUITest1}
+\end{table}
+
+\section{Plot testing}
+
+\begin{table}[H]
+\caption{A Series of manual/visual tests to determine functionality.
+\\}
+\begin{tabular}{|p{1.8in}|p{1.8in}|p{1.4in}|p{0.6in}|} \hline
+Action & ResE & ResA& Pass/Fail \\ \hline \hline
+Execute "plot x + 2;" and set minimum X = -10, maximum X = 10, resolution = 10. Observe the plotted values in the GUI. & Where Y = 0, X should be 2. Where Y = 1 X should be 3. & Where Y = 0, X = 2. Where Y = 0, X = 3. & PASS \\ \hline
+Execute "plot x\verb|^|2 - 2;" and set minimum X = -10, maximum X = 10, resolution = 10. Observe the plotted values in the GUI. & Where Y = 0, X = -2. Where Y = 5, X = 23. & Where Y = 0, X = -2. Where Y = 0, X = 23. & PASS \\ \hline
+\end{tabular}
+\label{TablePlotTest1}
+\end{table}
+
+\end{document}
+
