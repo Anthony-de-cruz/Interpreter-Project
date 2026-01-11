@@ -43,7 +43,16 @@
 
 
 \begin{abstract}
-Please replace this section with your own abstract. An abstract is a brief summary (maximum 250 words) of your entire project. It should cover your objectives, your methodologies used, a brief developmental history, your final results, in particular covering the optional tasks, and a discussion and conclusion. You do not cover the literature or background in an abstract nor should you use abbreviations or acronyms. The remainder of this report template has clear chapter titles and we suggest to stick to these although you can organise your material inside each chapter to your own preferences. A guideline in size is approximately 3,500 words (not including abstract, captions and references) but no real limit on figures, tables, diagrams, pseudo-code etc.
+This reprt documents both the design and implementation of a custom mathematical intpreter and graphing calculator. The primary objective was to o develop a capable maths intepreter and GUI with a user friendly interface. The development methodology adopted a hybrid programming approach,
+using the functional paradigm of F Sharp for the interpreter logic and the object oriented nature of C Sharp for the user interface.
+\newline
+\newline
+The project evolved through a series of iterative stages. Early development focuses on creating a foundational GUI, this was expanded to support advanced intpreter features such as 
+operator precedence, floating point arithmetic and variable storage using a symbol table. An external plotting library was used to enable the visulization of linear and polynomial functions.
+\newline
+\newline
+The final result is a fully functional mathematical software. It demonstrates successful compatibility between two langaes, with the front end handling the user input and the backend using lexical analysis and evaluation.
+The inclusion of the optional features: control flow and booleans represents the flexibility of the project.
 \end{abstract}
 
 \chapter{Introduction}
@@ -66,8 +75,6 @@ The main overarching goal of the project is to develop a capable maths inteprete
     \item To implement a interpreter capable of correctly intepreting and executing arithmetic expressions, managing variable assignment and executing control flow loops.
     \item To create a responsive GUI that is capable of accepting user commands, displaying results and displaying errors
     \item To create a plotting section in the GUI to plot both linear and polynomial functions and have interactive capabilities such as zooming in and out.
-    \item To provide a method of visualization by rendering the parse tree
-    \item To provide a method of GPU speed up to increare the quality of plotting
 \end{enumerate}
 \end{minipage}
 \end{center}
@@ -98,10 +105,26 @@ Priority & Task & Comments \\ \hline \hline
 
 
 \chapter{Background}
+The development of maths platforms and plotting software has a lot of history, ranging from early command line maths tools to web based educational tools.
+Desmos is one of such tools that represents a modern approach to mathermatical softwate. Desmos was launched in 2011, it is a web-based graphing calculator built mainly in Javascript \cite{Desmos:2023}.
+It mainly focuses on graphing and visualization allowing a user to input complex equations instantly in a browser, furthermore it is a great educational tool allowing students to get instant feedback making it more engaging to learn.
+\newline
+\newline
+Matlab is a programming and numeric computing platform used to analyze data, develop algorithms and create models \cite{Matlab:2023}. Matlab was originally released in the late 1970's by Cleve Moler, it was designed to be a interactive matrix calculator \cite{Wiki:MATLAB}.
+Its launch as a commercial product in 1984 by MathWorks gave matlab a significant redesign transforming it into what it is today allowing not only matrix operations but also plotting capabilities and algorithm implementation.
+\newline
+\newline
+The project follows some of the methodologies outlined in Crafting Interpreters by Robert Nystrom \cite{Nystrom:2021}. Nystrom's intpreter is implemented in java using an object oriented approach whilst this project
+adapts those concepts into a functional paradigm using Fsharp. The Abstract SyntaxTree (AST) was implemened using Fsharp Discriminated Unions. This approach allowed the data structure to mirror our Backus-Naur Form (BNF) directly.
+\newline
+\newline
+The graphical user interface (GUI) was developed using Window Presentation Foundation (WPF) \cite{WPF:2023}. The Csharp frontend invokes the Fsharp lexer and parser functions directly. One of the challenges faced in this was converting functional data types
+such as FsharpList into Csharp arras for the UI logic.
+\newline
+\newline
+The graphic library Oxyplot was used for the plotting capabilities. Oxyplot is an open source .NET plotting library \cite{OxyPlot:2023}. It handles the rendering of polynomial coeffcients generated by our intpreter, allowing the frontend To
+display graphs based on the user input.
 
-Give a brief background on similar software, e.g.\ \cite{Desmos:2023}, \cite{Matlab:2023}, etc.
-Also cite the books \cite{Nystrom:2021} or documentation \cite{WPF:2023} that you consulted.
-You should add additional references to the corresponding bib file (References.bib) referred to in the bottom of this document.
 
 
 \chapter{Development History}\label{Chap:DevHist}
@@ -109,6 +132,9 @@ You should add additional references to the corresponding bib file (References.b
 Describe the history of your development in terms of the iterations or sprints in your project (your Github repository or other version control should help you to retrospectively identify these). Use different sections for different sprints and subsections for specific details on the same sprint. Feel free to use subsubsections or paragraphs (which are not numbered) if needed. 
 
 \section{Sprint 1: Basic expressions and GUI}
+This was the starting point of the project, focusing on the development of a Graphic User Interface (GUI) using Window Presentation Format (WPF). A challenge 
+encountered during this phase was the teams unfamiliarity with the WPF framework. This was overcome by consulting the technical documentation \cite{WPF:2023}. 
+The result was a basic functional frontend capable of accepting basic user input.
 \subsection{Grammar in BNF}
 \begin{verbatim}
 <E>    ::= <T> <Eopt>
@@ -121,7 +147,7 @@ Describe the history of your development in terms of the iterations or sprints i
 \subsection{Basic GUI}
 We used WPF with C\# to develop a basic GUI - see Figure \ref{gui01}.
 
-\begin{figure}[htb]
+\begin{figure}[H]
 \begin{center}
 \includegraphics[width=0.9 \columnwidth]{GUI_01.png}
 \caption{A very basic GUI!}
@@ -130,13 +156,31 @@ We used WPF with C\# to develop a basic GUI - see Figure \ref{gui01}.
 \end{figure}
 
 \subsection{Testing}
-A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to from here.
+A summary of the critical test cases is presented in Table \ref{tab:test_summary}. These results represent a subset of the complete test suite found in Table \ref{Table2} (Appendix \ref{app:test}).
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{Expression} & \textbf{ResE} & \textbf{ResA} & \textbf{Status} \\
+        \hline
+        \texttt{9 - 3 - 2} & \texttt{4} & \texttt{4} & Pass \\
+        \texttt{5 + 3} & \texttt{8} & \texttt{8} & Pass \\
+        \texttt{+ 3} & \texttt{Error} & \texttt{Syntax Error} & Pass \\
+        \hline
+    \end{tabular}
+    \caption{Key testing outcomes (Subset of full data in Table \ref{Table2}).}
+    \label{tab:test_summary}
+\end{table}
 
 \section{Sprint 2: Adding unary minus, powers and mod}
-
+Building upon the basic arithmetic implemented in Sprint 1, this sprint focused on expanding the interpreter's mathematical capable to support more complex expressions.
+The main objective was to implement exponents( \verb|^|), the modulues operator ( mod ) and unary minus. There were two major issues in this sprint which were operator precedence and
+unary minus representing both subtraction and negation. These were overcome by restructuring the parser to handle operator precedence correctly and changing the parser logic to distinguish between 
+subtraction and negation.
 \subsection{BNF}
 \begin{verbatim}
-<E>    ::= <T> <Eopt>
+<E>    ::= <T> <Eopt> 
 <Eopt> ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
 <T>    ::= <U> <Topt>
 <Topt> ::= "*" <U> <Topt> | "/" <U> <Topt> | "%" <U> <Topt> | <empty>
@@ -148,7 +192,7 @@ A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to f
 
 \subsection{Updated GUI}
 
-\begin{figure}[htb]
+\begin{figure}[H]
 \begin{center}
 \includegraphics[width=0.9 \columnwidth]{GUI_02.png}
 \caption{Update GUI}
@@ -156,7 +200,7 @@ A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to f
 \end{center}
 \end{figure}
 
-\begin{figure}[htb]
+\begin{figure}[H]
 \begin{center}
 \includegraphics[width=0.9 \columnwidth]{GUI_03.png}
 \caption{Tutorial Page}
@@ -165,9 +209,27 @@ A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to f
 \end{figure}
 
 \subsection{Testing}
-A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to from here.
+A summary of the critical test cases is presented in Table \ref{tab:test_summary}. These results represent a subset of the complete test suite found in Table \ref{Table2} (Appendix \ref{app:test}).
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{Expression} & \textbf{ResE} & \textbf{ResA} & \textbf{Status} \\
+        \hline
+        \texttt{$10/3$} & \texttt{3} & \texttt{3} & Pass \\
+        \texttt{10 - - 2} & \texttt{12} & \texttt{12} & Pass \\
+        \texttt{$2 * 3 ^ 2$} & \texttt{18} & \texttt{18} & Pass \\
+        \hline
+    \end{tabular}
+    \caption{Key testing outcomes (Subset of full data in Table \ref{Table2}).}
+    \label{tab:test_summary}
+\end{table}
 
 \section{Sprint 3: Added floating point}
+Sprint 3 addressed the limitation of interger only arithmetic by introducing floating poinr numbers.
+This was done by modifying the lexer to recognize decimal points and parse fractional values. There was also an update 
+to the BNF, splitting number into distinct integer (\verb|<IN>|) and Float (\verb|<FL>|) definitions.
 \subsection{BNF}
 \begin{verbatim}
 <E>    ::= <T> <Eopt>
@@ -183,12 +245,27 @@ A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to f
 \end{verbatim}
 
 \subsection{Testing}
-A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to from here.
+A summary of the critical test cases is presented in Table \ref{tab:test_summary}. These results represent a subset of the complete test suite found in Table \ref{Table2} (Appendix \ref{app:test}).
 
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{Expression} & \textbf{ResE} & \textbf{ResA} & \textbf{Status} \\
+        \hline
+        \texttt{10/3.0} & \texttt{3.333} & \texttt{3.333} & Pass \\
+        \texttt{3 + 1.1} & \texttt{12} & \texttt{12} & Pass \\
+        \texttt{$2 ^{1.1}$} & \texttt{2.144} & \texttt{2.144} & Pass \\
+        \hline
+    \end{tabular}
+    \caption{Key testing outcomes (Subset of full data in Table \ref{Table2}).}
+    \label{tab:test_summary}
+\end{table}
 \section{Sprint 4: Added linear plotting}
-
+Sprint 4 focused on transforming the project into a visual graphic tool. The main objective was the intergration og the OxyPlot library \cite{OxyPlot:2023} into the frontend.
+The Csharp was significantly updated to translate constant functions e.g. y=5, this established a good framework for more complex vizulationsn in later springs.
 \subsection{Updated GUI}
-\begin{figure}[htb]
+\begin{figure}[H]
 \begin{center}
 \includegraphics[width=0.9 \columnwidth]{GUI_04.png}
 \caption{Plot GUI}
@@ -196,10 +273,58 @@ A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to f
 \end{center}
 \end{figure}
 
-\subsection{Testing}
-A subset of Table \ref{Table2} in Appendix \ref{app:test} could be referred to from here.
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.9 \columnwidth]{GUI_05.png}
+\caption{Plot GUI with test plot}
+\label{gui04}
+\end{center}
+\end{figure}
 
 \section{Sprint 5: Added polynomial plotting}
+The focus of sprint 5 was to extend the interpreter's capabilities to support variables and polynomial functions.
+To achieve this a symbol table was integrated.
+\subsection{BNF}
+\begin{verbatim}
+STATEMENTS
+<STA>    ::= ( <ASN> | <PLT> | <PTR> ) ";"
+           | <STA> <STA>
+            | <empty>
+<ASN>    ::= "let" <SYM> "=" <NM>
+<PLT>    ::= "plot" <NM> <PLTopt>
+<PLTopt> ::= "," <NM> <PLopt> | <empty>
+<PRT>    ::= "print" <NM>
+<SYM>    ::= <alpha+>
+
+EXPRESSIONS
+<E>    ::= <T> <Eopt>
+<Eopt> ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+<T>    ::= <P> <Topt>
+<Topt> ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
+<P>    ::= <U> <Popt>
+<Popt> ::= "^" <U> <Popt> | <empty>
+<U>    ::= "-" <U> | <NM>
+<NM>   ::= <IN> | <FL> | <SYM> | "(" <E> ")"
+<IN>   ::= <digit+>
+<FL>   ::= <digit+> "." <digit+>
+\end{verbatim}
+
+\subsection{Updated GUI}
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.9 \columnwidth]{GUI_06.png}
+\caption{Plot GUI with a parabola}
+\label{gui04}
+\end{center}
+\end{figure}
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.9 \columnwidth]{GUI_07.png}
+\caption{Plot GUI with multiple lines and parabola}
+\label{gui04}
+\end{center}
+\end{figure}
 
 \chapter{Final deliverable}\label{Impl}
 
