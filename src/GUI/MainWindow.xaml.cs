@@ -1,8 +1,6 @@
 ﻿using System.Globalization;
 using Microsoft.Win32;
 using OxyPlot;
-using OxyPlot.Axes;
-using OxyPlot.Series;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
@@ -67,128 +65,13 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Create the Oxyplot graph model.
-    /// </summary>
-    /// <returns>The plot model.</returns>
-    private PlotModel CreatePlotModel()
-    {
-        var model = new PlotModel();
-        model.Axes.Add(new LinearAxis
-        {
-            Position = AxisPosition.Bottom,
-            Minimum = _minimumX,
-            Maximum = _maximumX,
-            Title = "X",
-            AxislineStyle = LineStyle.Solid,
-            AxislineThickness = 2,
-            MajorGridlineStyle = LineStyle.Solid,
-            MinorGridlineStyle = LineStyle.Dot,
-            MajorGridlineColor = OxyColor.FromRgb(200, 200, 200),
-            MinorGridlineColor = OxyColor.FromRgb(230, 230, 230)
-        });
-
-        model.Axes.Add(new LinearAxis
-        {
-            Position = AxisPosition.Left,
-            Title = "Y",
-            Minimum = _minimumX,
-            Maximum = _maximumX,
-            AxislineStyle = LineStyle.Solid,
-            AxislineThickness = 2,
-            MajorGridlineStyle = LineStyle.Solid,
-            MinorGridlineStyle = LineStyle.Dot,
-            MajorGridlineColor = OxyColor.FromRgb(200, 200, 200),
-            MinorGridlineColor = OxyColor.FromRgb(230, 230, 230)
-        });
-        return model;
-    }
-
-    /// <summary>
-    /// Plot each line individually and generate an interference pattern.
-    /// </summary>
-    /// <param name="lines"></param>
-    private void InterferencePlot(double[][] lines)
-    {
-        if (lines.Length == 0) return;
-
-        PlotModel model = CreatePlotModel();
-        double[] interferencePattern = new double[lines[0].Length];
-
-        // Plot individual lines.
-        for (int i = 0; i < lines.Length; i++)
-        {
-            var individualSeries = new LineSeries 
-            { 
-                Color = OxyColor.FromArgb(80, 100, 100, 255),
-                StrokeThickness = 1,
-                Title = $"Line {i}"
-            };
-        
-            double x = _maximumX;
-            for (int j = 0; j < lines[i].Length; j++)
-            {
-                individualSeries.Points.Add(new DataPoint(x, lines[i][j]));
-                interferencePattern[j] += lines[i][j]; // Accumulate for interference.
-                x -= _step;
-            }
-        
-            model.Series.Add(individualSeries);
-        }
-
-        // Plot interference pattern.
-        var interferenceSeries = new LineSeries 
-        { 
-            Color = OxyColor.FromRgb(255, 0, 0),
-            StrokeThickness = 3,
-            Title = "Interference Pattern"
-        };
-    
-        double xFinal = _maximumX;
-        for (int j = 0; j < lines[0].Length; j++)
-        {
-            interferenceSeries.Points.Add(new DataPoint(xFinal, interferencePattern[j]));
-            xFinal -= _step;
-        }
-
-        model.Series.Add(interferenceSeries);
-        PlotView.Model = model;
-    }    
-
-    /// <summary>
-    /// Plot each line individually.
-    /// </summary>
-    /// <param name="lines"></param>
-    private void IndividualPlot(double[][] lines)
-    {
-        if (lines.Length == 0) return;
-        
-        PlotModel model = CreatePlotModel();
-        
-        for (int i =  0; i < lines.Length; i++)
-        {
-            var lineSeries = new LineSeries()
-            {
-                Title = $"Line {i}"
-            };
-            double x = _maximumX;
-            foreach (double y in lines[i])
-            {
-                x -= _step;
-                lineSeries.Points.Add(new DataPoint(x, y));
-            }
-            model.Series.Add(lineSeries);
-        }
-        PlotView.Model = model;
-    }
-
-    /// <summary>
     /// Handle calculate button click.
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
     private void RunButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ExprTextBox.Text.Length > 0) return;
+        if (ExprTextBox.Text.Length == 0) return;
         
         StringWriter stdOut = new StringWriter();
         double[][] plotArray;
@@ -213,10 +96,17 @@ public partial class MainWindow
         OutputTextBox.Text = stdOut.ToString();
 
         // Plot the polynomials.
-        if (InterferenceCheckbox.IsChecked ==  true) 
-            InterferencePlot(plotArray);
-        else
-            IndividualPlot(plotArray);
+        PlotView.Model = InterferenceCheckbox.IsChecked == true
+            ? PlotController.InterferencePlot(
+                plotArray,
+                _minimumX,
+                _maximumX,
+                _step) 
+            : PlotController.IndividualPlot(
+                plotArray,
+                _minimumX,
+                _maximumX,
+                _step);
     }
 
     /// <summary>
@@ -276,7 +166,7 @@ public partial class MainWindow
     /// <param name="e"></param>
     private void ClearButton_Click(object sender, RoutedEventArgs e)
     {
-        PlotView.Model = new();
+        PlotView.Model = new PlotModel();
     }
 
     /// <summary>
