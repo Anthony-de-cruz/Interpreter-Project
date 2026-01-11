@@ -207,14 +207,73 @@ In this chapter you cover the final or ``ultimate'' version of your project. It 
 
 \section{Final BNF}
 
+\begin{verbatim}
+STATEMENTS
+<PROG>  ::= <STA> <PROG> | <empty>
+<STA>   ::= <WHL> | <IF> | <ASN> | <PLT> | <PRT>
+<WHL>   ::= "while" <BE> "{" <PROG> "}"
+<IF>    ::= "if" <BE> "{" <PROG> "}"
+<ASN>   ::= "let" <SYM> "=" <BE> ";" | "func" <SYM> "=" <BE> ";"
+<PLT>   ::= "plot" <BE> ";"
+<PRT>   ::= "print" <BE> ";" | <BE> ";"    // Print top level expressions.
+<SYM>   ::= <alpha+>
+
+EXPRESSIONS
+<BE>    ::= <BU> <BEopt>
+<BEopt> ::= "and" <BU> <BEopt> | "or" <BU> <BEopt> | <empty>
+<BU>    ::= "!" <BU> | <BT>
+<BT>    ::= <E> <BTopt>
+<BTopt> ::= "==" <E> <BTopt>
+          | "!=" <E> <BTopt>
+          | ">" <E> <BTopt>
+          | "<" <E> <BTopt>
+          | <empty>
+<E>     ::= <T> <Eopt>
+<Eopt>  ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
+<T>     ::= <P> <Topt>
+<Topt>  ::= "*" <P> <Topt> | "/" <P> <Topt> | "%" <P> <Topt> | <empty>
+<P>     ::= <U> <Popt>
+<Popt>  ::= "^" <U> <Popt> | <empty>
+<U>     ::= "-" <U> | <NM>
+<NM>    ::= <VL> | <SYM> | "(" <BE> ")"    // Where SYM is defined in symbol table.
+<VL>    ::= <IN> | <FL>    // Separate literal value simplifies implementation.
+<IN>    ::= <digit+>
+<FL>    ::= <digit+> "." <digit+>
+
+KEY
+STATEMENTS
+PROG  -> Program
+STA   -> Statement
+ASN   -> Variable/Function Assignment
+PLT   -> Plot
+PTR   -> Print
+SYM   -> Symbol
+EXPRESSIONS
+BE    -> Boolean Expression
+BEopt -> Boolean Expression/Optional
+BU    -> Boolean Unary
+BT    -> Boolean Term
+E     -> Expression
+Eopt  -> Expression/Optional
+T     -> Term
+Topt  -> Term/Optional
+P     -> Power
+Popt  -> Power/Optional
+U     -> Unary
+NM    -> Number
+VL    -> Value
+IN    -> Integer
+FL    -> Floating Point
+\end{verbatim}
+
 \section{Final GUI}
 
 See Figure \ref{gui02}.
 
 \begin{figure}[htb]
 %\begin{center}
-\includegraphics[width=0.9 \columnwidth]{GUI_02.png}
-\caption{A potentially final GUI!}
+\includegraphics[width=0.9 \columnwidth]{GUI_Final.png}
+\caption{The final application.}
 \label{gui02}
 %\end{center}
 \end{figure}
@@ -254,9 +313,17 @@ Note that code snippets or lists of crucial programming code or large UML diagra
 
 \subsection{Testing}
 
-Extensive unit testing as been written for all aspects of the interpreter.
+Extensive testing as been performed for all aspects of the system including the interpreter, GUI and plotting functionality.
 
-Describe what testing you have done on the interpreter (lexer, parser and execution), GUI and GUI-Interpreter communication, plotting, etc. Table \ref{Table2} in Appendix \ref{app:test} should be completed to do basic arithmetic expression tests.
+The interpreter was validated through comprehensive unit testing. Both valid and inputs with specific focus on syntactic correctness and adherence to the grammar BNF. Test cases were designed to assess operator precedence and associativity as well as syntactic errors.
+
+An automated build and test pipeline was implemented for project pull requests. This pipeline help to detect regressions early and keep development fluid. 
+
+Structured manual testing of the GUI was performed in order to determine functionality. Core UI functions were run and outputs checked against expected results. WPF based GUI testing solutions such as WPF Pilot, which allows you to inspect specific UI elements, were considered, as additional automated testing would make it easier and more practical to programmatically test the GUI more exhaustively. We decided against integrating these types of tools as the time cost could not be justified as the GUI is too simple.
+
+A similar manner was also used to determine plotting correctness where we plotted a known function and manually calculated the correctness of Y values at a series of known points of X.
+
+This overall testing methodology was informed by time cost to benefit analysis and previous industry experience. The automated test pipeline proved invaluable as it caught a number of regression issues throughout the development process.
 
 \chapter{Discussion, conclusion and future work}
 
