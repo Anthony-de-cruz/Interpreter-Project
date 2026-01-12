@@ -9,38 +9,50 @@
         <GroupBox Header="Welcome to the interpreter tutorial!" Grid.Row="0" Margin="10,10,10,0">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <TextBlock TextWrapping="Wrap" Margin="10" xml:space="preserve">
-To Use: 
-  1. Type an expression in the input box
-  2. Press 'Calculate' to evaluate
-  3. Tokens and results will appear below
+This application allows you to define mathematical expressions, functions, loops, and conditions in a small scripting language and plot the results interactively. It is designed for experimenting with functions, sequences of functions, and visualizing outputs on a 2D plot.
 
-General Info:
+
+1. Quickstart: 
+    1. Write a script or load an example script via the 'Open' button.
+    2. Press 'Run' to evaluate
+    3. Output and plots will appear.
+
+2. Layout Overview
+    - Code Editor (Top Left): Enter your script here.
+    - Plot Area (Top Right): Displays the plotted graphs based on the script. Multiple lines can be plotted simultaneously.
+    - Output (Bottom Left): Logs runtime messages, e.g., which lines are being plotted.
+    - Plot Settings (Bottom Middle): Configure minimum/maximum X values and resolution.
+    - Optionally enable interference mode (for summing multiple plots).
+    Buttons:
+    - Open / Save: Load or save scripts.
+    - Run: Execute the current script.
+    - Clear Plot: Reset the plot area.
+
+3. General Info:
     - Our intpreter uses left associativity 
     - There is an order of precedence for the operations (follows BIDMAS/BODMAS)
     - We have unit testing (Xunit)
-                    
-Valid tokens:
-    - Numbers: 0,1,2,...
-    - Operators: +,-,*,/,%,^
-    - Parentheses: ()
 
-Valid Syntax:
-    - Expressions can be made up of a combination of numbers, operators and parentheses  
-    - Expressions must be complete e.g cannot have '5+'
+4. Syntax Guide:
 
-Valid syntax examples:
-    - 5 + 3
-    - 2 * (3 + 4)
-    - 10 / (2 + 3)
+    Valid symbols:
+        - Functions: print, plot, let, func, while, if
+        - Numbers: 0,1,2,...
+        - Operators: +,-,*,/,%,^,>,==,!=
+        - Parentheses: ()
 
-Invalid syntax examples:
-    - 5+
-    - 2^
-                    
-Near Future Additions:
-    - Floating point (Dot .)
-    - Exponent E for exponential notation of floats
-    - Parse Tree visualization
+    Valid Syntax:
+        - Expressions can be made up of a combination of numbers, operators and parentheses  
+        - Expressions must be complete e.g cannot have '5+'
+
+    Valid syntax examples:
+        - 5 + 3
+        - 2 * (3 + 4)
+        - 10 / (2 + 3)
+
+    Invalid syntax examples:
+        - 5+
+        - 2^
                 </TextBlock>
             </ScrollViewer>
         </GroupBox>
