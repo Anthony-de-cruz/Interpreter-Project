@@ -43,15 +43,15 @@
 
 
 \begin{abstract}
-This reprt documents both the design and implementation of a custom mathematical intpreter and graphing calculator. The primary objective was to o develop a capable maths intepreter and GUI with a user friendly interface. The development methodology adopted a hybrid programming approach,
+This report documents both the design and implementation of a custom mathematical interpreter and graphing calculator. The primary objective was to o develop a capable maths interpreter and GUI with a user friendly interface. The development methodology adopted a hybrid programming approach,
 using the functional paradigm of F Sharp for the interpreter logic and the object oriented nature of C Sharp for the user interface.
 \newline
 \newline
-The project evolved through a series of iterative stages. Early development focuses on creating a foundational GUI, this was expanded to support advanced intpreter features such as 
-operator precedence, floating point arithmetic and variable storage using a symbol table. An external plotting library was used to enable the visulization of linear and polynomial functions.
+The project evolved through a series of iterative stages. Early development focuses on creating a foundational GUI, this was expanded to support advanced interpreter features such as 
+operator precedence, floating point arithmetic and variable storage using a symbol table. An external plotting library was used to enable the visualisation of linear and polynomial functions.
 \newline
 \newline
-The final result is a fully functional mathematical software. It demonstrates successful compatibility between two langaes, with the front end handling the user input and the backend using lexical analysis and evaluation.
+The final result is a fully functional mathematical software. It demonstrates successful compatibility between two languages, with the front end handling the user input and the back-end using lexical analysis and evaluation.
 The inclusion of the optional features: control flow and booleans represents the flexibility of the project.
 \end{abstract}
 
@@ -59,20 +59,20 @@ The inclusion of the optional features: control flow and booleans represents the
 \label{chap:intro}
 
 \section{Project statement}
-This project focuses on developing a desktop maths software solution with GUI that uses an interpreter. This project play an important role in areas such as education and research, offering a platform to test mathematical concepts easier. Fsharp is used for the interpreter and Csharp (WPF) is ued for the GUI.
+This project focuses on developing a desktop maths software solution with GUI that uses an interpreter. This project play an important role in areas such as education and research, offering a platform to test mathematical concepts easier. F\# is used for the interpreter and C\# (WPF) is used for the GUI.
 The software has been developed over a period of 4 months and was split into sprints (see Development History \ref{Chap:DevHist}). We accomplished this via modular design and 
-testing each part at every stage. Git was used for version control and Github's kanban board feature was used to break down tasks. The final deliverable is a capable desktop maths software solution with a GUI that succesfully links a maths interpreter with a user-friendly interface.
+testing each part at every stage. Git was used for version control and Github's kanban board feature was used to break down tasks as well as the platforms workflow feature for automated test pipelines. The final deliverable is a capable desktop maths software solution with a GUI that successfully links a maths interpreter with a user-friendly interface.
 
 
 \section{Aims and objectives}
-The main overarching goal of the project is to develop a capable maths intepreter and GUI with a user friendly interface, this is broken down further into the main project objectives below: 
+The main overarching goal of the project is to develop a capable maths interpreter and GUI with a user friendly interface, this is broken down further into the main project objectives below: 
 
 \begin{center}
 {\large Project Objectives} \\[0.5em] 
 \rule{0.6\textwidth}{0.4pt} \\[1em]   
 \begin{minipage}{0.6\textwidth}       
 \begin{enumerate}
-    \item To implement a interpreter capable of correctly intepreting and executing arithmetic expressions, managing variable assignment and executing control flow loops.
+    \item To implement a interpreter capable of correctly interpreting and executing arithmetic expressions, managing variable assignment and executing control flow loops.
     \item To create a responsive GUI that is capable of accepting user commands, displaying results and displaying errors
     \item To create a plotting section in the GUI to plot both linear and polynomial functions and have interactive capabilities such as zooming in and out.
 \end{enumerate}
@@ -85,7 +85,7 @@ The main overarching goal of the project is to develop a capable maths inteprete
 \begin{tabular}{|p{1in}|p{2in}|p{2.5in}|} \hline
 Priority & Task & Comments \\ \hline \hline
 \multirow{3}{1in}{Must}
-& To implement a intpreter cabable of correctly parsing and executing arithmetic expressions & Is the most essential task within the brief \\ \cline{2-3}
+& To implement a interpreter capable of correctly parsing and executing arithmetic expressions & Is the most essential task within the brief \\ \cline{2-3}
 & To implement variable management allowing assignment of values to variables and to use variables in expressions & An important feature needed to allow polynomials later in the project  \\ \cline{2-3}
 & To develop a basic GUI that has a command prompt for user input and a text field for displaying results or errors & Essential for user interaction and error reporting\\ \cline{2-3}
 & To be able to plot both linear and polynomial functions within the GUI & The main visualization requirement, needed to visualise mathematical functions. \\ \hline \hline
@@ -97,7 +97,7 @@ Priority & Task & Comments \\ \hline \hline
 & To implement GPU acceleration & To optimise the rendering of the grid line during real-time interaction \\ \hline \hline
 \multirow{3}{1in}{Should not}
 & To implement a compiler/transpiler & Overly ambitious given the development time. \\ \cline{2-3}
-& To implement advanced mathematical features (differentiation/integration) & We wanted to ensurte the core intpreter was robust and also dropped to the development time. \\ \hline
+& To implement advanced mathematical features (differentiation/integration) & We wanted to ensure the core interpreter was robust and also dropped to the development time. \\ \hline
 \end{tabular}
 \label{Table1}
 \end{center}
@@ -106,7 +106,7 @@ Priority & Task & Comments \\ \hline \hline
 
 \chapter{Background}
 The development of maths platforms and plotting software has a lot of history, ranging from early command line maths tools to web based educational tools.
-Desmos is one of such tools that represents a modern approach to mathermatical softwate. Desmos was launched in 2011, it is a web-based graphing calculator built mainly in Javascript \cite{Desmos:2023}.
+Desmos is one of such tools that represents a modern approach to mathematical softwate. Desmos was launched in 2011, it is a web-based graphing calculator built mainly in Javascript \cite{Desmos:2023}.
 It mainly focuses on graphing and visualization allowing a user to input complex equations instantly in a browser, furthermore it is a great educational tool allowing students to get instant feedback making it more engaging to learn.
 \newline
 \newline
@@ -114,22 +114,16 @@ Matlab is a programming and numeric computing platform used to analyze data, dev
 Its launch as a commercial product in 1984 by MathWorks gave matlab a significant redesign transforming it into what it is today allowing not only matrix operations but also plotting capabilities and algorithm implementation.
 \newline
 \newline
-The project follows some of the methodologies outlined in Crafting Interpreters by Robert Nystrom \cite{Nystrom:2021}. Nystrom's intpreter is implemented in java using an object oriented approach whilst this project
-adapts those concepts into a functional paradigm using Fsharp. The Abstract SyntaxTree (AST) was implemened using Fsharp Discriminated Unions. This approach allowed the data structure to mirror our Backus-Naur Form (BNF) directly.
+The project follows some of the methodologies outlined in Crafting Interpreters by Robert Nystrom \cite{Nystrom:2021}. Nystrom's interpreter is implemented in java using an object oriented approach whilst this project adapts those concepts into a functional paradigm using F\#. The Abstract SyntaxTree (AST) was  implemented using F\# Discriminated Unions. This approach allowed the data structure to mirror our Backus-Naur Form (BNF) directly.
 \newline
 \newline
-The graphical user interface (GUI) was developed using Window Presentation Foundation (WPF) \cite{WPF:2023}. The Csharp frontend invokes the Fsharp lexer and parser functions directly. One of the challenges faced in this was converting functional data types
-such as FsharpList into Csharp arras for the UI logic.
+The graphical user interface (GUI) was developed using Window Presentation Foundation (WPF) \cite{WPF:2023}. The C\# frontend invokes the F\# lexer and parser functions directly. One of the challenges faced in this was converting functional data types such as F\#List into C\# arras for the UI logic.
 \newline
 \newline
-The graphic library Oxyplot was used for the plotting capabilities. Oxyplot is an open source .NET plotting library \cite{OxyPlot:2023}. It handles the rendering of polynomial coeffcients generated by our intpreter, allowing the frontend To
+The graphic library Oxyplot was used for the plotting capabilities. Oxyplot is an open source .NET plotting library \cite{OxyPlot:2023}. It handles the rendering of plot points generated by our interpreter, allowing the frontend To
 display graphs based on the user input.
 
-
-
 \chapter{Development History}\label{Chap:DevHist}
-
-Describe the history of your development in terms of the iterations or sprints in your project (your Github repository or other version control should help you to retrospectively identify these). Use different sections for different sprints and subsections for specific details on the same sprint. Feel free to use subsubsections or paragraphs (which are not numbered) if needed. 
 
 \section{Sprint 1: Basic expressions and GUI}
 This was the starting point of the project, focusing on the development of a Graphic User Interface (GUI) using Window Presentation Format (WPF). A challenge 
@@ -156,7 +150,7 @@ We used WPF with C\# to develop a basic GUI - see Figure \ref{gui01}.
 \end{figure}
 
 \subsection{Testing}
-A summary of the critical test cases is presented in Table \ref{tab:test_summary}. These results represent a subset of the complete test suite found in Table \ref{Table2} (Appendix \ref{app:test}).
+A summary of the critical test cases is presented in Table \ref{tab:test_summary}. These results represent a subset of the complete test suite found in Table \ref{TableTest1} (Appendix \ref{app:test}).
 
 \begin{table}[ht]
     \centering
@@ -175,9 +169,8 @@ A summary of the critical test cases is presented in Table \ref{tab:test_summary
 
 \section{Sprint 2: Adding unary minus, powers and mod}
 Building upon the basic arithmetic implemented in Sprint 1, this sprint focused on expanding the interpreter's mathematical capable to support more complex expressions.
-The main objective was to implement exponents( \verb|^|), the modulues operator ( mod ) and unary minus. There were two major issues in this sprint which were operator precedence and
-unary minus representing both subtraction and negation. These were overcome by restructuring the parser to handle operator precedence correctly and changing the parser logic to distinguish between 
-subtraction and negation.
+The main objective was to implement exponents(\verb|^|), the modulus operator (\%) and unary minus. There were two major issues in this sprint which were operator precedence and
+unary minus representing both subtraction and negation. These were overcome by restructuring the parser to handle operator precedence correctly and changing the parser logic to distinguish between subtraction and negation.
 \subsection{BNF}
 \begin{verbatim}
 <E>    ::= <T> <Eopt> 
@@ -195,7 +188,7 @@ subtraction and negation.
 \begin{figure}[H]
 \begin{center}
 \includegraphics[width=0.9 \columnwidth]{GUI_02.png}
-\caption{Update GUI}
+\caption{Updated GUI}
 \label{gui02}
 \end{center}
 \end{figure}
@@ -227,7 +220,7 @@ A summary of the critical test cases is presented in Table \ref{tab:test_summary
 \end{table}
 
 \section{Sprint 3: Added floating point}
-Sprint 3 addressed the limitation of interger only arithmetic by introducing floating poinr numbers.
+Sprint 3 addressed the limitation of integer only arithmetic by introducing floating point numbers.
 This was done by modifying the lexer to recognize decimal points and parse fractional values. There was also an update 
 to the BNF, splitting number into distinct integer (\verb|<IN>|) and Float (\verb|<FL>|) definitions.
 \subsection{BNF}
@@ -262,8 +255,8 @@ A summary of the critical test cases is presented in Table \ref{tab:test_summary
     \label{tab:test_summary}
 \end{table}
 \section{Sprint 4: Added linear plotting}
-Sprint 4 focused on transforming the project into a visual graphic tool. The main objective was the intergration og the OxyPlot library \cite{OxyPlot:2023} into the frontend.
-The Csharp was significantly updated to translate constant functions e.g. y=5, this established a good framework for more complex vizulationsn in later springs.
+Sprint 4 focused on transforming the project into a visual graphic tool. The main objective was the integration with the OxyPlot library \cite{OxyPlot:2023} into the frontend.
+The C\# was significantly updated to translate constant functions e.g. y=5, this established a good framework for more complex visualisations in later springs.
 \subsection{Updated GUI}
 \begin{figure}[H]
 \begin{center}
@@ -328,7 +321,7 @@ EXPRESSIONS
 
 \chapter{Final deliverable}\label{Impl}
 
-In this chapter you cover the final or ``ultimate'' version of your project. It will show the final BNF, the final GUI, the architecture (which should be MVVM or MVC) that includes UML diagrams, additional algorithms if not already included in the previous sprint sections.
+The chapter will cover the final deliverable version of the project, including BNF and code architecture.
 
 \section{Final BNF}
 
@@ -391,63 +384,198 @@ IN    -> Integer
 FL    -> Floating Point
 \end{verbatim}
 
+This complete BNF models our final interpreter's capabilities. The top of the structure includes statements which are designed to run sequentially with the recursive $PROG$ type. Statements are broken down into several types where each one is denoted with a string keyword and at least one argument.
+\newline
+\newline
+Loops $WHL$ allow the user to execute $PROG$ blocks repeatedly as long as a condition $BE$ is met. Ifs $IF$ follow effectively the same behaviour without the repetition. A condition is met if the expression resolves as any non zero value. The language lacks a dedicated boolean type for simplicity.
+\newline
+\newline
+Assignments $ASN$ allow variables to be set with $let =$ and functions (effectively expressions that are only fully evaluated at plot time) to be set with $func =$.
+\newline
+\newline
+Plot $PLT$ is a special statement that allows the user to provide an expression to be used to generate a plot sequence. During execution, the given expression is resolved for each step in the plotting sequence. For each step, the symbol table is modified such that the special variable $x$ is set to the plot point X, where Y is the result of the expression. The implementation code can be found in Fig.\ref{codeSnip1}. When a plot is made, a message is written to the output text stream.
+\newline
+\newline
+The print statement $PRT$ writes the given expression result to the output text stream.
+\newline
+\newline
+After statements come expressions. The expression hierarchy is structured in such an order as to facilitate the desirable order of execution in a recursive descent parser. Boolean expressions all resolve to return either an integer or float value 1 or 0, depending on the logical result. Boolean expressions $BE$ $and$ and $or$ are resolved after boolean unary $BU$ $!$ and boolean terms $BT$ $==$, $>$ in order to get the conventionally expected behaviour from a condition such as \text{5 != 3 and 2 == 1 - 3} found in other languages.
+\newline
+\newline
+After boolean expressions come the rest of the arithmetic expressions. In order to produce mathematically correct operator precedence, unary minuses $U$ are resolved last, followed by powers $P$, terms $T$ which includes $*$, $/$, and $\%$ whilst expressions $E$ with $+$ and $-$ are resolved last.
+\newline
+\newline
+Finally numbers $NM$ contain our literal values $VL$, symbol $SYM$ strings and bracketed $BE$. Integers $IN$ and floats $FL$ are wrapped by their own type for the sake of ease of implementation. $SYM$ strings are used as variable and function identifies to lookup and write to the symbol table. $BE$ are resolved before other kinds of expressions here in order to set appropriate bracketed precedence.
+
 \section{Final GUI}
 
-See Figure \ref{gui02}.
+Fig.\ref{guiFinal02} shows a screenshot of the final application running a simple program, plotting several lines. The program being run demonstrates the full capabilities of the final interpreter, demonstrating variables, functions, loops, conditionals, arithmetic and plotting.
 
-\begin{figure}[htb]
+\begin{figure}[H]
 %\begin{center}
 \includegraphics[width=0.9 \columnwidth]{GUI_Final.png}
 \caption{The final application.}
-\label{gui02}
+\label{guiFinal02}
+%\end{center}
+\end{figure}
+
+Fig.\ref{guiFinal03} shows a screenshot of the final application running the same program in interference mode. This was a mode of rendering added to facilitate the generate of interference patterns based on the combination of every wave or line being plotted at once. Although not directly described in the brief, this feature was added at the end as the development cost was considered minimal. This style of rendering can be toggled via a simple labelled checkbox. This capability would have significant use cases in the fields of wave processing and communications.
+
+\begin{figure}[h]
+%\begin{center}
+\includegraphics[width=0.6 \columnwidth]{GUI_Inter.png}
+\caption{The final application. The program from fig.\ref{guiFinal02} rendering in interference mode.}
+\label{guiFinal03}
 %\end{center}
 \end{figure}
 
 \section{Code architecture}
 
-Fig.\ \ref{class} shows a UML class diagram (class, sequence and state diagrams are the most frequently used UML diagrams). Illustrating your code architecture - that should be of the MVC family and, considering it is developed in C\# with WPF more specifcally the MVVM pattern - is very important.
+The F\# interpreter is implemented as a recursive descent parser which is covered in further detail in the following section. BNF specific nodes are covered in the previous section. The parser is implemented as a function that returns an AST made up of nodes defined as type unions. This AST is then passed into the executor which then traverses the AST to resolve the program.
+\newline
+\newline
+Fig.\ref{class} shows a UML class diagram of the GUI. In order to keep the front end as minimal as possible, it consists only of 2 window classes and 2 wrapper classes for the F\# interpreter and plot modelling, named $InterpreterController$ and $PlotController$ respectively. The application was architected with an MVC style model was attempted in order to follow software engineering best practices, forming abstract interfaces that encapsulate each area of responsibility and facilitate smooth automated testing.
+\newline
+\newline
+$InterpreterController$ worked as the interface between the F\# interpreter and the C\# frontend, cleaning abstracting away any language interop difficulties. Plot data rendering and modelling was provided by Oxyplot's $PlotModel$ and $LineSeries$ types.
 
-\begin{figure}[htb]
+\begin{figure}[H]
 %\begin{center}
-\includegraphics[width=1.0 \columnwidth]{class.png}
-\caption{A UML class diagram to be replaced with yours!}
+\includegraphics[width=1.0 \columnwidth]{ClassUML.png}
+\caption{The GUI UML class diagram. Note that $System.Windows.Window$ is provided by WPF and $Oxyplot.Core.PlotModel$ is provided by Oxyplot.}
 \label{class}
 %\end{center}
 \end{figure}
 
 \section{Algorithms}
 
-Algorithms can be described in this chapter if not already covered in previous sections. Pseudo-code is preferred over code snippets. If you use the latter then make sure it is well commented inside the code or via the figure caption. 
+The lexer in Fig.\ref{lexerAlgo} processes the source input in a single left-to-right pass, repeatedly examining the next character (or sequence of characters) to determine the appropriate token to generate. Keywords and operators are detected first using fixed string matches to ensure correct precedence over identifiers. Numbers are recognised by scanning consecutive digits into a single value, while identifiers are formed by consuming contiguous alphabetic characters. For each construct, a corresponding token is appended to the output list. This is a simple and efficient lexer for use with a recursive descent parser.
 
-\begin{algorithm}[th]
-\caption{ The Newton-Raphson method }
+\begin{figure}[H]
+\begin{algorithm}[H]
+\caption{Lexer algorithm}
 \begin{algorithmic}[1]
-\STATE Initialise root based on estimate
-\STATE Set stop criterion
-\\ \texttt{const double error = 0.000001;}
-\WHILE {stop criterion not met}
-	\STATE Compute f(root)
-	\STATE Compute f'(root)
-	\STATE root := root - f(root)/f'(root)
+\STATE $\mathit{tokens} \gets [\ ]$
+\STATE $\mathit{input} \gets \textsc{ToCharList}(\mathit{source})$
+\WHILE{$\mathit{input}$ is not empty}
+    \STATE $c \gets \textsc{Head}(\mathit{input})$
+    \IF{$\mathit{input}$ starts with a keyword or operator}
+        \STATE $\mathit{tokens}.\textsc{Append}(\textsc{Token})$
+        \STATE \textsc{Consume}$(n)$
+    \ELSIF{$c$ is a digit}
+        \STATE $(\mathit{value}, \mathit{rest}) \gets \textsc{ScanNumber}(\mathit{input})$
+        \STATE $\mathit{tokens}.\textsc{Append}(\mathit{value})$
+        \STATE $\mathit{input} \gets \mathit{rest}$
+    \ELSIF{$c$ is alphabetic}
+        \STATE $(\mathit{name}, \mathit{rest}) \gets \textsc{ScanIdentifier}(\mathit{input})$
+        \STATE $\mathit{tokens}.\textsc{Append}(\mathit{name})$
+        \STATE $\mathit{input} \gets \mathit{rest}$
+    \ELSIF{$c = \#$}
+        \STATE $\mathit{input} \gets \textsc{SkipComment}(\mathit{input})$
+    \ELSIF{$c$ is whitespace}
+        \STATE \textsc{Consume}$(1)$
+    \ELSE
+        \STATE \textsc{RaiseSyntaxError}$(c)$
+    \ENDIF
+\ENDWHILE
+\STATE \textbf{return} $\mathit{tokens}$
+\end{algorithmic}
+\end{algorithm}
+\caption{Simplified lexer algorithm for tokenising source input}
+\label{lexerAlgo}
+\end{figure}
+
+
+The pseudocode found in Fig.\ref{compressedParser} is designed to demonstrate the logical flow of a recursive descent parser. Here, we can see the function $ParseExpression$ looks to parse a single expression node, calling $ParseNextExpression$ on it's left hand side and $ParseOperand$ on it's right hand side first before creating it's own node. This means that when an expression is first parsed, the left is always resolved first, trickling down to it's terminal literal. The right hand side is then parsed. If there is a matching operator, the right hand operand is then evaluated and the cycle continues. If there is no matching operator, the algorithm will continue to bubble up until one is found or the program ends.
+\newline
+\newline
+This method of traversal depicts both token parsing for building an AST as well as AST traversal for execution and is how both passes of the interpreter are implemented.
+
+\begin{figure}[H]
+\begin{algorithm}[H]
+\caption{Recursive descent parser demonstrating recursion and precedence}
+\begin{algorithmic}[1]
+\STATE \textbf{function} ParseExpression(tokens)
+\STATE \quad $(left, tokens) \gets \textsc{ParseNextExpression}(tokens)$
+\STATE \quad $(right, tokens) \gets \textsc{ParseOperand}(tokens)$
+\STATE \quad \textbf{return} $(\textsc{NewNode}(left, right), tokens)$
+\STATE
+\STATE \textbf{function} ParseOperand(tokens)
+\IF{next token is specific operator}
+\STATE \quad $(left, tokens) \gets \textsc{ParseNextExpression}(tokens)$
+\STATE \quad $(right, tokens) \gets \textsc{ParseOperand}(tokens)$
+\STATE \quad \textbf{return} $(\textsc{SpecificNode}(, expr), tokens)$
+\ELSE
+\STATE \quad \textbf{return} $(\textsc{EmptyOperand}(), tokens)$
+\ENDIF
+\STATE
+\STATE \textbf{function} ParseNextExpression(tokens) ...
+\end{algorithmic}
+\end{algorithm}
+\caption{Recursive descent parser demonstrating recursion and precedence.}
+\label{compressedParser}
+\end{figure}
+
+Fig.\ref{plotGenAlgo} Demonstrates how plots data is generated. In the actual implementation, expressions are stored in the interpreter symbol table during parsing and are resolved for different values of $x$ at execution time. Values for $x$ are inserted as values within the symbol table in each iteration. In order to facilitate multiple lines, the real implementation features a 2 dimensional array of plot points, where each sequence represents a single line to be plotted.
+
+\begin{figure}[H]
+\begin{algorithm}[H]
+\caption{Generate plot points from expression}
+\begin{algorithmic}[1]
+\STATE $\mathit{f} \gets \textsc{Expression}$
+\STATE $\mathit{minX} \gets -10.0$
+\STATE $\mathit{maxX} \gets 10.0$
+\STATE $\mathit{step} \gets 0.1$
+\STATE $x \gets \mathit{maxX}$
+\WHILE{$x > \mathit{minX}$}
+    \STATE $x \gets x - \mathit{step}$
+    \STATE $y \gets \textsc{Compute}(f(x))$
+    \STATE \textsc{AppendResult}$(x, y)$
 \ENDWHILE
 \end{algorithmic}
 \end{algorithm}
+\caption{Algorithm to generate plot points. $minX$, $maxX$, and $step$ are set as example values.}
+\label{plotGenAlgo}
+\end{figure}
 
+Fig.\ref{plotInterGenAlgo} Demonstrates how a new interference pattern can be generate from a collection of line plot sequences in a simple manner.
 
-Note that code snippets or lists of crucial programming code or large UML diagrams should go in Appendix \ref{app:other} (or further appendices).
+\begin{figure}[H]
+\begin{algorithm}[H]
+\caption{Generate interference pattern based on existing plots}
+\begin{algorithmic}[1]
+\STATE $\mathit{lines} \gets \textsc{ExistingPlotSequences}$
+\STATE $\mathit{pattern} \gets \textsc{NewPlotSequence}$
+
+\FOR{each index $i$ of $\mathit{lines}[0]$}
+    \STATE $x \gets \mathit{lines}[0][i].x$
+    \STATE $y \gets 0$
+    \FOR{each $\mathit{line}$ in $\mathit{lines}$}
+        \STATE $y \gets y + \mathit{line}[i].y$
+    \ENDFOR
+    \STATE $\mathit{pattern}.\textsc{AppendResult}(x, y)$
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
+\caption{Algorithm to generate interference patterns.}
+\label{plotInterGenAlgo}
+\end{figure}
 
 \subsection{Testing}
 
 Extensive testing as been performed for all aspects of the system including the interpreter, GUI and plotting functionality.
-
+\newline
+\newline
 The interpreter was validated through comprehensive unit testing. Both valid and inputs with specific focus on syntactic correctness and adherence to the grammar BNF. Test cases were designed to assess operator precedence and associativity as well as syntactic errors.
-
 An automated build and test pipeline was implemented for project pull requests. This pipeline help to detect regressions early and keep development fluid. 
-
-Structured manual testing of the GUI was performed in order to determine functionality. Core UI functions were run and outputs checked against expected results. WPF based GUI testing solutions such as WPF Pilot, which allows you to inspect specific UI elements, were considered, as additional automated testing would make it easier and more practical to programmatically test the GUI more exhaustively. We decided against integrating these types of tools as the time cost could not be justified as the GUI is too simple.
-
+Tables \ref{TableTest1}, \ref{TableTest2}, \ref{TableTest3}, \ref{TableTest4} and \ref{TableTest5} contain the automated unit test cases.
+\newline
+\newline
+Structured manual testing of the GUI was performed in order to determine functionality. Core UI functions were run and outputs checked against expected results. WPF based GUI testing solutions such as \cite{WPFPilot:2026}, which allows you to inspect specific UI elements, were considered, as additional automated testing would make it easier and more practical to programmatically test the GUI more exhaustively. We decided against integrating these types of tools as the time cost could not be justified as the GUI is too simple.
 A similar manner was also used to determine plotting correctness where we plotted a known function and manually calculated the correctness of Y values at a series of known points of X.
-
+Tables \ref{TableGUITest1} and \ref{TablePlotTest1} contain the manual test cases.
+\newline
+\newline
 This overall testing methodology was informed by time cost to benefit analysis and previous industry experience. The automated test pipeline proved invaluable as it caught a number of regression issues throughout the development process.
 
 \chapter{Discussion, conclusion and future work}
@@ -546,7 +674,7 @@ i = 0; if i < 5 y = i; & Error & Syntax Error & PASS & \\ \hline
 i = 0; while \{ y = i; \} & Error & Syntax Error & PASS & \\ \hline
 i = 0; if \{ y = i; \} & Error & Syntax Error & PASS & \\ \hline
 \end{tabular}
-\label{Table2}
+\label{TableTest2}
 \end{table}
 
 \begin{table}[H]
@@ -647,7 +775,7 @@ varname & [Sym "varname"] & [Sym "varname"] & PASS & \\ \hline
 myvar & [Sym "myvar"] & [Sym "myvar"] & PASS & \\ \hline
 3 + variable & [Int 3; Add; SymT "variable"] & [Int 3; Add; Sym "variable"] & PASS & \\ \hline
 \end{tabular}
-\label{Table5}
+\label{TableTest5}
 \end{table}
 
 \section{GUI testing}
@@ -678,6 +806,31 @@ Execute "plot x\verb|^|2 - 2;" and set minimum X = -10, maximum X = 10, resoluti
 \end{tabular}
 \label{TablePlotTest1}
 \end{table}
+
+\chapter{Other Materials}
+
+The program found in Fig.\ref{gui02}.
+\begin{verbatim}
+func myCubicLine = x^3 + x^2 + x - 3;   # Define a cubic function.
+
+let i = 0;
+while i < 4 {                   # A loop with a boolean comparison.
+    let i = i + 1;
+
+    plot myCubicLine + 1.5^i;    # Plot a series of cubic lines.
+
+    if i == 3 {   # Plot a quadratic line when i is 3.
+        plot x^2 + x - 1.5 * i;  
+    }
+}
+\end{verbatim}
+\label{Script1}
+
+\begin{figure}[htb]
+\includegraphics[width=0.9 \columnwidth]{CodeSnip1.png}
+\caption{The real F\# implementation for plot point calculation.}
+\label{codeSnip1}
+\end{figure}
 
 \end{document}
 
