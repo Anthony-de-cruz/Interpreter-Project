@@ -1,0 +1,9 @@
+let myVar = 3;
+
+print myVar;
+
+func myFunc = x^2 + myVar;
+
+if myVar > 2 {
+	plot myFunc;
+}
